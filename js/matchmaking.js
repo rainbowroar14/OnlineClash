@@ -43,6 +43,16 @@
     const slotRef = db.collection("player_slots").doc(gid);
     await slotRef.set({ matchId: firebase.firestore.FieldValue.delete() }, { merge: true });
 
+    // Cleanup stale queue docs for this same guest before enqueuing again.
+    try {
+      const stale = await db.collection("battle_queue").where("guestId", "==", gid).get();
+      const dels = [];
+      stale.forEach((d) => dels.push(d.ref.delete()));
+      if (dels.length) await Promise.all(dels);
+    } catch (_) {
+      /* best-effort cleanup */
+    }
+
     const qref = await db.collection("battle_queue").add({
       guestId: gid,
       joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -65,7 +75,7 @@
     });
 
     const unsubQueue = db.collection("battle_queue").onSnapshot((snap) => {
-      const waiting = snap.docs
+      const waitingRaw = snap.docs
         .filter((d) => d.data().state === "waiting")
         .sort((a, b) => {
           const am = joinedMs(a);
@@ -73,6 +83,17 @@
           if (am !== bm) return am - bm;
           return a.id.localeCompare(b.id);
         });
+
+      // De-dupe by guestId so one user cannot appear multiple times.
+      const seenGuests = new Set();
+      const waiting = [];
+      for (const d of waitingRaw) {
+        const g = d.data()?.guestId;
+        if (!g || seenGuests.has(g)) continue;
+        seenGuests.add(g);
+        waiting.push(d);
+      }
+
       onStatus(`In queue… (${waiting.length} waiting)`);
 
       if (waiting.length < 2) return;
