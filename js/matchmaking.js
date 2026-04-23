@@ -1,22 +1,30 @@
 /**
  * Client-side battle queue: Firestore battle_queue + player_slots + battle_matches.
- * Pairing uses deterministic "executor" (lexicographically smallest queue doc id of the pair)
- * so only one client commits the batch.
+ * Matching: any client may run an atomic transaction; only one commit wins.
+ * "Active" players are those with a recent lastSeen (server time). Pending
+ * serverTimestamp() fields read as null locally — treat as fresh so we never
+ * drop live players from the queue.
  */
 (function () {
   "use strict";
-  const QUEUE_HEARTBEAT_SEC = 5;
-  const QUEUE_STALE_SEC = 20;
+  const QUEUE_HEARTBEAT_SEC = 3;
+  const QUEUE_STALE_SEC = 14;
+  const MATCH_RETRY_MS = 2000;
 
+  function tsMillis(v) {
+    if (v && typeof v.toMillis === "function") return v.toMillis();
+    return null;
+  }
+
+  /** Firestore millis if committed; if null (pending serverTimestamp), act as "just now". */
   function joinedMs(d) {
-    const j = d.data().joinedAt;
-    if (j && typeof j.toMillis === "function") return j.toMillis();
-    return 0;
+    const j = tsMillis(d.data().joinedAt);
+    return j != null ? j : Date.now();
   }
 
   function aliveMs(d) {
-    const ls = d.data().lastSeen;
-    if (ls && typeof ls.toMillis === "function") return ls.toMillis();
+    const ls = tsMillis(d.data().lastSeen);
+    if (ls != null) return ls;
     return joinedMs(d);
   }
 
@@ -68,6 +76,18 @@
       state: "waiting",
     });
 
+    function pingQueue() {
+      return qref
+        .set(
+          {
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+            state: "waiting",
+          },
+          { merge: true },
+        )
+        .catch(() => {});
+    }
+
     let matchedOnce = false;
     let matchingInFlight = false;
     function fireMatch(matchId) {
@@ -83,7 +103,10 @@
         const now = Date.now();
         const raw = await db.collection("battle_queue").where("state", "==", "waiting").get();
         const waitingRaw = raw.docs
-          .filter((d) => now - aliveMs(d) <= QUEUE_STALE_SEC * 1000)
+          .filter((d) => {
+            const age = now - aliveMs(d);
+            return age >= 0 && age <= QUEUE_STALE_SEC * 1000;
+          })
           .sort((a, b) => {
             const am = joinedMs(a);
             const bm = joinedMs(b);
@@ -147,20 +170,33 @@
       }
     });
 
-    const hbTimer = setInterval(() => {
-      qref.set(
-        {
-          lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-          state: "waiting",
-        },
-        { merge: true },
-      ).catch(() => {});
-    }, QUEUE_HEARTBEAT_SEC * 1000);
+    function hbTick() {
+      if (typeof document !== "undefined" && document.hidden) return;
+      void pingQueue();
+    }
+
+    const hbTimer = setInterval(hbTick, QUEUE_HEARTBEAT_SEC * 1000);
+    void pingQueue();
+    setTimeout(hbTick, 400);
+
+    function onVis() {
+      if (!document.hidden) void pingQueue();
+    }
+    document.addEventListener("visibilitychange", onVis);
+
+    const matchRetryTimer = setInterval(() => {
+      if (matchedOnce) return;
+      void tryMatchTwo();
+    }, MATCH_RETRY_MS);
 
     const unsubQueue = db.collection("battle_queue").onSnapshot((snap) => {
       const now = Date.now();
       const waitingRaw = snap.docs
-        .filter((d) => d.data().state === "waiting" && now - aliveMs(d) <= QUEUE_STALE_SEC * 1000)
+        .filter((d) => {
+          if (d.data().state !== "waiting") return false;
+          const age = now - aliveMs(d);
+          return age >= 0 && age <= QUEUE_STALE_SEC * 1000;
+        })
         .sort((a, b) => {
           const am = joinedMs(a);
           const bm = joinedMs(b);
@@ -178,13 +214,17 @@
         waiting.push(d);
       }
 
-      onStatus(`In queue… (${waiting.length} waiting)`);
+      const activeLabel =
+        waiting.length === 1 ? "1 player waiting (tab must stay open)" : `${waiting.length} active in queue`;
+      onStatus(`In queue… (${activeLabel})`);
 
       if (waiting.length >= 2) void tryMatchTwo();
     });
 
     return async function cancel() {
       clearInterval(hbTimer);
+      clearInterval(matchRetryTimer);
+      document.removeEventListener("visibilitychange", onVis);
       unsubQueue();
       unsubSlot();
       try {

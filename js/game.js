@@ -3596,4 +3596,17 @@
     getDefaultDeck: () => DEFAULT_DECK_EIGHT.slice(),
     getCardPreview: (cardId) => cardUiInfo(String(cardId)),
   };
+
+  const NIGHT_ARENA_VERSION = 47;
+  window.NIGHT_ARENA_VERSION = NIGHT_ARENA_VERSION;
+  function paintVersionBadge() {
+    document.querySelectorAll("[data-na-version]").forEach((el) => {
+      el.textContent = "v" + NIGHT_ARENA_VERSION;
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", paintVersionBadge);
+  } else {
+    paintVersionBadge();
+  }
 })();

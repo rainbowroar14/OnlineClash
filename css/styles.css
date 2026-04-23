@@ -33,6 +33,18 @@ body {
   padding: 1.25rem 1rem 2rem;
 }
 
+.header {
+  position: relative;
+}
+
+.version-badge {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
 .header h1 {
   margin: 0 0 0.35rem;
   font-size: 1.75rem;
