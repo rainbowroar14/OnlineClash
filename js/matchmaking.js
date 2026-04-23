@@ -102,8 +102,6 @@
 
         const d0 = waiting[0];
         const d1 = waiting[1];
-        const exec = [d0.id, d1.id].sort()[0];
-        if (qref.id !== exec) return;
 
         const g0 = d0.data().guestId;
         const g1 = d1.data().guestId;
