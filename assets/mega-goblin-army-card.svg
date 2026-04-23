@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" shape-rendering="crispEdges">
+  <rect width="32" height="32" rx="4" fill="#14532d"/>
+  <rect x="2" y="2" width="28" height="28" rx="3" fill="#166534"/>
+  <!-- Mini goblin hut as head (static “mask” — body reads as Chud below) -->
+  <path fill="#78350f" stroke="#451a03" stroke-width="1" d="M16 3 L23 9 L9 9 Z"/>
+  <rect x="11" y="9" width="10" height="7" fill="#92400e" stroke="#451a03" stroke-width="1"/>
+  <rect x="14" y="11" width="4" height="5" fill="#1c1917"/>
+  <rect x="12" y="10" width="3" height="2" fill="rgba(254,243,199,0.5)"/>
+  <!-- Neck / collar under hut -->
+  <rect x="13" y="16" width="6" height="2" fill="#22c55e"/>
+  <!-- wide gut (same as Chud card) -->
+  <rect x="6" y="18" width="20" height="8" fill="#15803d"/>
+  <rect x="8" y="20" width="16" height="5" fill="#16a34a"/>
+  <rect x="11" y="22" width="10" height="3" fill="#22c55e"/>
+  <!-- huge lower body / hips -->
+  <rect x="4" y="26" width="24" height="4" fill="#14532d"/>
+  <rect x="6" y="27" width="20" height="2" fill="#166534"/>
+  <!-- thick legs (shortened to fit hut head) -->
+  <rect x="7" y="29" width="7" height="2" fill="#14532d"/>
+  <rect x="18" y="29" width="7" height="2" fill="#14532d"/>
+  <rect x="7" y="30" width="7" height="1" fill="#0f172a"/>
+  <rect x="18" y="30" width="7" height="1" fill="#0f172a"/>
+</svg>

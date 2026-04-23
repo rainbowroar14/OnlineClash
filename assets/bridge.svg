@@ -1,27 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 108" width="52" height="108">
   <defs>
     <linearGradient id="deck" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#4f5868"/>
-      <stop offset="50%" style="stop-color:#6f7b90"/>
-      <stop offset="100%" style="stop-color:#4f5868"/>
+      <stop offset="0%" style="stop-color:#4a5366"/>
+      <stop offset="35%" style="stop-color:#6f7d94"/>
+      <stop offset="70%" style="stop-color:#5c667a"/>
+      <stop offset="100%" style="stop-color:#3d4454"/>
     </linearGradient>
     <linearGradient id="edge" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2a3140"/>
+      <stop offset="0%" style="stop-color:#323a4a"/>
       <stop offset="100%" style="stop-color:#1a2030"/>
     </linearGradient>
   </defs>
-  <!-- Shadow under span (river surface) -->
-  <ellipse cx="26" cy="100" rx="21" ry="5" fill="rgba(0,0,0,0.42)"/>
-  <!-- Main deck: runs top → bottom to cross a horizontal river -->
+  <ellipse cx="26" cy="100" rx="22" ry="5" fill="rgba(0,0,0,0.45)"/>
   <path
     d="M12 5 Q26 2 40 5 L44 103 Q26 106 8 103 Z"
     fill="url(#deck)"
-    stroke="#1e2533"
+    stroke="#151a24"
     stroke-width="1.8"
     stroke-linejoin="round"
   />
-  <!-- Planks (horizontal boards across the walkway) -->
-  <g stroke="rgba(0,0,0,0.22)" stroke-width="1.2" stroke-linecap="round">
+  <g stroke="rgba(0,0,0,0.28)" stroke-width="1" stroke-linecap="round">
     <line x1="14" y1="16" x2="38" y2="16"/>
     <line x1="13" y1="28" x2="39" y2="28"/>
     <line x1="12" y1="40" x2="40" y2="40"/>
@@ -29,12 +27,26 @@
     <line x1="11" y1="64" x2="41" y2="64"/>
     <line x1="12" y1="76" x2="40" y2="76"/>
     <line x1="13" y1="88" x2="39" y2="88"/>
+    <line x1="15" y1="10" x2="37" y2="10" stroke="rgba(255,255,255,0.08)"/>
   </g>
-  <!-- Side rails (vertical along the crossing) -->
-  <rect x="9" y="6" width="4" height="98" rx="1" fill="url(#edge)" opacity="0.95"/>
-  <rect x="39" y="6" width="4" height="98" rx="1" fill="url(#edge)" opacity="0.95"/>
-  <line x1="11" y1="10" x2="11" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-  <line x1="41" y1="10" x2="41" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-  <!-- Highlight on crown of arch -->
-  <path d="M14 7 Q26 4 38 7" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.6" stroke-linecap="round"/>
+  <g fill="rgba(255,255,255,0.06)">
+    <rect x="16" y="20" width="20" height="1"/>
+    <rect x="15" y="32" width="22" height="1"/>
+    <rect x="14" y="44" width="24" height="1"/>
+    <rect x="14" y="56" width="24" height="1"/>
+    <rect x="14" y="68" width="24" height="1"/>
+    <rect x="15" y="80" width="22" height="1"/>
+    <rect x="16" y="92" width="20" height="1"/>
+  </g>
+  <rect x="9" y="6" width="4" height="98" rx="1" fill="url(#edge)" opacity="0.96"/>
+  <rect x="39" y="6" width="4" height="98" rx="1" fill="url(#edge)" opacity="0.96"/>
+  <rect x="10" y="8" width="2" height="94" fill="rgba(255,255,255,0.06)" rx="0.5"/>
+  <rect x="40" y="8" width="2" height="94" fill="rgba(255,255,255,0.06)" rx="0.5"/>
+  <line x1="11" y1="10" x2="11" y2="100" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <line x1="41" y1="10" x2="41" y2="100" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <path d="M14 7 Q26 4 38 7" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="11" cy="14" r="1.2" fill="#2a3140" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+  <circle cx="41" cy="14" r="1.2" fill="#2a3140" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+  <circle cx="11" cy="96" r="1.2" fill="#2a3140" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+  <circle cx="41" cy="96" r="1.2" fill="#2a3140" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
 </svg>

@@ -11,18 +11,31 @@
   const RIVER_BOT = 312;
   /** Half-width of walkable bridge deck (must match drawBridge deckW ~ 46). */
   const BRIDGE_HALF_W = 23;
+  /** Lateral offset from bridge center for deploy / ford (stay inside deck). */
+  const BRIDGE_LANE_MAX_OFF = 17;
 
   const BRIDGES = [
     { x: 220, y: (RIVER_TOP + RIVER_BOT) / 2 },
     { x: 580, y: (RIVER_TOP + RIVER_BOT) / 2 },
   ];
+  /**
+   * After a princess falls, far-side deploy uses a box this fraction of the old half-lane rectangle
+   * (linear ½ ⇒ ¼ area), centered on the lane bridge vertically.
+   */
+  const PRINCESS_FALL_GAIN_SCALE = 0.5;
 
   const MINI_PEKKA_COST = 4;
   const KNIGHT_COST = 3;
-  const SKELETON_COST = 2;
+  const SKELETON_COST = 1;
+  const GOBLINS_COST = 3;
+  const GOBLIN_GANG_COST = 5;
+  const CHUD_COST = 6;
   const ARCHERS_COST = 2;
   const SPEAR_GOBLINS_COST = 2;
   const SKARMY_COST = 4;
+  const MEGA_ARMY_COST = 9;
+  /** Mega Army — same stats as Skarmy / Skeletons, packed in a wider ring. */
+  const MEGA_ARMY_COUNT = 40;
   const ARROWS_COST = 3;
   const ARROWS_SPELL_DMG = 150;
   const ARROWS_SPELL_RADIUS = 92;
@@ -31,7 +44,7 @@
   const FIREBALL_TOWER_DMG = FIREBALL_SPELL_DMG * 0.5;
   const FIREBALL_SPELL_RADIUS = ARROWS_SPELL_RADIUS * (2 / 3);
 
-  const GOBLIN_HUT_COST = 5;
+  const GOBLIN_HUT_COST = 4;
   const GOBLIN_HUT_HP = 680;
   /** Building “timer”: HP ticks down at this rate until the hut collapses (CR-style lifetime). */
   const GOBLIN_HUT_LIFETIME_SEC = 30;
@@ -41,10 +54,9 @@
   /** Radius from hut center: enemies inside enable spawning; ring is drawn in-game. */
   const HUT_TRIGGER_RADIUS = 138;
   const MAX_SPEAR_PER_HUT = 5;
-  const SPEAR_GOBLIN_HP = 25;
+  const SPEAR_GOBLIN_HP = 50;
   const SPEAR_GOBLIN_DMG = 26;
   const SPEAR_GOBLIN_RANGE = 118;
-  const SPEAR_GOBLIN_SPEED = 27;
   const SPEAR_GOBLIN_INTERVAL = 1.05;
   const ZAP_COST = 2;
   const ZAP_SPELL_DMG = 72;
@@ -59,15 +71,22 @@
     "mini_pekka",
     "knight",
     "skeleton",
+    "goblins",
     "archers",
     "spear_goblins",
+    "goblin_gang",
+    "chud",
     "skarmy",
+    "mega_army",
     "arrows",
     "fireball",
     "goblin_hut",
+    "mega_goblin_army",
     "zap",
     "wizard",
     "mega_knight",
+    "musketeer",
+    "witch",
   ];
 
   /**
@@ -78,14 +97,14 @@
     "knight",
     "wizard",
     "archers",
-    "spear_goblins",
+    "witch",
     "mega_knight",
     "arrows",
     "goblin_hut",
   ];
 
   const MINI_HP = 400;
-  const MINI_DMG = 300;
+  const MINI_DMG = 350;
   const SPEED_MINI_PEKKA = 25;
 
   const WIZARD_COST = 5;
@@ -116,31 +135,74 @@
   const MEGA_KNIGHT_JUMP_SLAM_OUTER = 72;
 
   const SKELETON_HP = 1;
-  const SKELETON_DMG = 35;
+  const SKELETON_DMG = 30;
   const SPEED_SKELETON = 25;
 
   const ARCHER_HP = 35;
+  /** Melee goblin (Goblins / Goblin Gang): same cadence as skeletons, 1.3× skeleton slash. */
+  const GOBLIN_HP = 75;
+  const GOBLIN_DMG = SKELETON_DMG * 1.3;
+  const SPEED_GOBLIN = 27;
+  /** Spear Goblins + hut spawns: 3 slower than melee goblins. */
+  const SPEAR_GOBLIN_SPEED = SPEED_GOBLIN - 3;
+  /** Tower-only melee goblin bruiser. */
+  const CHUD_HP = 2000;
+  const CHUD_DMG = 150;
+  const SPEED_CHUD = 10;
+  const ATTACK_INTERVAL_CHUD = 1.55;
+  const CHUD_MELEE_RANGE = 28;
+  const CHUD_RADIUS = 14;
+  /** Chud-style troop (towers only) with hut head; 5 melee goblins on death. */
+  const MEGA_GOBLIN_ARMY_COST = 15;
+  const MEGA_GOBLIN_ARMY_HP = GOBLIN_HUT_HP + CHUD_HP;
   const ARCHER_SHOT_DMG = 40;
   const ARCHER_RANGE = 85;
   const SPEED_ARCHER = 30;
+  const ATTACK_INTERVAL_ARCHER = 1.1;
+
+  /** Single-target rifle troop (Clash Royale Musketeer–style). */
+  const MUSKETEER_COST = 4;
+  const MUSKETEER_HP = 270;
+  const MUSKETEER_SHOT_DMG = 100;
+  const MUSKETEER_RANGE = 92 * 1.5;
+  const SPEED_MUSKETEER = 24;
+  const ATTACK_INTERVAL_MUSKETEER = 1.1 * 2;
+
+  /** Splash ranged + periodic skeleton spawns. */
+  const WITCH_COST = 5;
+  const WITCH_HP = 304;
+  const WITCH_SHOT_DMG = ARCHER_SHOT_DMG * 2 * 1.5;
+  const WITCH_RANGE = ARCHER_RANGE;
+  const SPEED_WITCH = 24;
+  const ATTACK_INTERVAL_WITCH = ATTACK_INTERVAL_ARCHER * 2;
+  const WITCH_SPLASH_RADIUS = 24;
+  const WITCH_SPLASH_FRACTION = 0.55;
+  const WITCH_SPAWN_INTERVAL = 4;
 
   /** Delay before first melee (Mini / Knight only). */
   const MELEE_FIRST_HIT_DELAY = 0.5;
   /** Seconds between attacks (melee repeat, or archer arrow cadence). */
   const ATTACK_INTERVAL_MINI_PEKKA = 1.6;
   const ATTACK_INTERVAL_KNIGHT = 1.2;
-  const ATTACK_INTERVAL_SKELETON = 0.4;
-  /** Skarmy skeletons swing faster than lone skeletons. */
-  const ATTACK_INTERVAL_SKARMY = 0.28;
-  const ATTACK_INTERVAL_ARCHER = 1.1;
-  /** Two-frame walk cycle (wiki-style march timing, readable in pixels). */
-  const WALK_CYCLE_SEC = 0.5;
-  /** Native art size: 16×16 units, 8×8 skeletons; scaled up when drawn. */
+  /** Skeleton card & Skarmy use the same cadence. */
+  const ATTACK_INTERVAL_SKELETON = 0.7;
+  /** Four-frame walk loop duration (matches old 2×0.5s cadence). */
+  const WALK_LOOP_SEC = 1;
+  const WALK_FRAME_COUNT = 4;
+  /** Native art: 16×16 heavy troops, 12×12 light troops; scaled when drawn. */
   const DRAW_PX_UNIT = 32;
   const DRAW_PX_SKEL = 16;
-  const MAX_ELIXIR = 10;
+  const MAX_ELIXIR = 15;
   const ELIXIR_PER_SEC = 1 / 2.75;
   const DEPLOY_DELAY_SEC = 0.4;
+  /** PvP: authoritative client publishes full arena state this often (seconds). */
+  const BATTLE_ARENA_SYNC_SEC = 5;
+  /** Princess lanes: x less than this = left tower lane (eL / pL), else right (eR / pR). */
+  const LANE_SPLIT_X = 400;
+  /** Mega Knight ground slam center shifts this fraction toward the target (not on his feet). */
+  const MEGA_KNIGHT_GROUND_AIM_BLEND = 0.58;
+  /** Coarse grid for deploy-hint overlay (performance). */
+  const DEPLOY_HINT_STEP = 14;
 
   const PROJ_SPEED = 300;
   const FIREBALL_PROJ_SPEED = 265;
@@ -154,7 +216,7 @@
    * stand still just outside strict rangedRange and never fire (especially vs towers).
    */
   const RANGED_STANDOFF_SLACK = 4;
-  const PRINCESS_DMG = 12;
+  const PRINCESS_DMG = 24;
   const KING_DMG = 24;
   const PRINCESS_TOWER_HP = 2000;
   const KING_TOWER_HP = 4000;
@@ -170,26 +232,32 @@
     archerWalk: /** @type {HTMLImageElement[]} */ ([]),
     spearGoblinWalk: /** @type {HTMLImageElement[]} */ ([]),
     wizardWalk: /** @type {HTMLImageElement[]} */ ([]),
+    witchWalk: /** @type {HTMLImageElement[]} */ ([]),
+    musketeerWalk: /** @type {HTMLImageElement[]} */ ([]),
     megaKnightWalk: /** @type {HTMLImageElement[]} */ ([]),
+    chudWalk: /** @type {HTMLImageElement[]} */ ([]),
     towerPrincess: new Image(),
     towerKing: new Image(),
     bridge: new Image(),
   };
 
-  function loadWalkPair(folder, base, targetArr) {
-    for (let i = 0; i < 2; i++) {
+  function loadWalkFrames(folder, base, targetArr) {
+    for (let i = 0; i < WALK_FRAME_COUNT; i++) {
       const im = new Image();
       im.src = `${folder}/${base}-w${i}.svg`;
       targetArr.push(im);
     }
   }
-  loadWalkPair("assets", "mini-pekka", SPRITES.miniWalk);
-  loadWalkPair("assets", "knight", SPRITES.knightWalk);
-  loadWalkPair("assets", "skeleton", SPRITES.skelWalk);
-  loadWalkPair("assets", "archer", SPRITES.archerWalk);
-  loadWalkPair("assets", "spear-goblin", SPRITES.spearGoblinWalk);
-  loadWalkPair("assets", "wizard", SPRITES.wizardWalk);
-  loadWalkPair("assets", "mega-knight", SPRITES.megaKnightWalk);
+  loadWalkFrames("assets", "mini-pekka", SPRITES.miniWalk);
+  loadWalkFrames("assets", "knight", SPRITES.knightWalk);
+  loadWalkFrames("assets", "skeleton", SPRITES.skelWalk);
+  loadWalkFrames("assets", "archer", SPRITES.archerWalk);
+  loadWalkFrames("assets", "spear-goblin", SPRITES.spearGoblinWalk);
+  loadWalkFrames("assets", "wizard", SPRITES.wizardWalk);
+  loadWalkFrames("assets", "witch", SPRITES.witchWalk);
+  loadWalkFrames("assets", "musketeer", SPRITES.musketeerWalk);
+  loadWalkFrames("assets", "mega-knight", SPRITES.megaKnightWalk);
+  loadWalkFrames("assets", "chud", SPRITES.chudWalk);
   SPRITES.towerPrincess.src = "assets/tower-princess.svg";
   SPRITES.towerKing.src = "assets/tower-king.svg";
   SPRITES.bridge.src = "assets/bridge.svg";
@@ -198,7 +266,7 @@
   const testingPanelSync = { fn: /** @type {null | (() => void)} */ (null) };
 
   function walkFrameIndex(state) {
-    return Math.floor(state.time / WALK_CYCLE_SEC) % 2;
+    return Math.floor((state.time / WALK_LOOP_SEC) * WALK_FRAME_COUNT) % WALK_FRAME_COUNT;
   }
 
   function dist(ax, ay, bx, by) {
@@ -223,6 +291,45 @@
       if (Math.abs(x - BRIDGES[i].x) <= BRIDGE_HALF_W) return false;
     }
     return true;
+  }
+
+  /** @param {"player" | "enemy"} forSide @param {"L" | "R"} lane */
+  function princessFallGainBounds(forSide, lane) {
+    const xPad = 48;
+    const laneLeftX0 = xPad;
+    const laneLeftX1 = LANE_SPLIT_X;
+    const laneRightX0 = LANE_SPLIT_X;
+    const laneRightX1 = W - xPad;
+    const yTop = forSide === "player" ? 36 : RIVER_TOP;
+    const yBot = forSide === "player" ? RIVER_BOT : H - 36;
+    const legacyW = lane === "L" ? laneLeftX1 - laneLeftX0 : laneRightX1 - laneRightX0;
+    const legacyH = yBot - yTop;
+    const cx = lane === "L" ? (laneLeftX0 + laneLeftX1) / 2 : (laneRightX0 + laneRightX1) / 2;
+    const cy = (RIVER_TOP + RIVER_BOT) / 2;
+    const gw = legacyW * PRINCESS_FALL_GAIN_SCALE;
+    const gh = legacyH * PRINCESS_FALL_GAIN_SCALE;
+    let x0 = cx - gw / 2;
+    let x1 = cx + gw / 2;
+    let y0 = cy - gh / 2;
+    let y1 = cy + gh / 2;
+    y0 = Math.max(yTop, y0);
+    y1 = Math.min(yBot, y1);
+    if (lane === "L") {
+      x0 = Math.max(laneLeftX0, x0);
+      x1 = Math.min(laneLeftX1, x1);
+    } else {
+      x0 = Math.max(laneRightX0, x0);
+      x1 = Math.min(laneRightX1, x1);
+    }
+    return { x0, x1, y0, y1 };
+  }
+
+  /** @param {"player" | "enemy"} forSide @param {"L" | "R"} lane */
+  function inPrincessFallGainZone(forSide, lane, x, y) {
+    const { x0, x1, y0, y1 } = princessFallGainBounds(forSide, lane);
+    if (y < y0 || y > y1) return false;
+    if (lane === "L") return x >= x0 && x <= x1 && x < LANE_SPLIT_X;
+    return x >= LANE_SPLIT_X && x >= x0 && x <= x1;
   }
 
   function aliveTowers(towers) {
@@ -261,11 +368,40 @@
     return best;
   }
 
+  function ensureBridgeLaneOx(troop) {
+    if (troop.bridgeLaneOx != null && Number.isFinite(troop.bridgeLaneOx)) return;
+    let h = 0;
+    const s = String(troop.id || "u0");
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    const n = 7;
+    const k = Math.abs(h) % n;
+    const ox = (k - (n >> 1)) * (BRIDGE_LANE_MAX_OFF / 3);
+    troop.bridgeLaneOx = clamp(ox, -BRIDGE_LANE_MAX_OFF, BRIDGE_LANE_MAX_OFF);
+  }
+
+  function bridgeMouthX(troop, b) {
+    return b.x + (troop.bridgeLaneOx ?? 0);
+  }
+
   /**
    * Nearest enemy by straight-line distance — troop or targetable tower (CR-style),
    * not "troops always win over buildings."
    */
   function pickCombatTarget(troop, state) {
+    if (troop.type === "chud" || troop.type === "mega_goblin_army") {
+      let bestD = Infinity;
+      /** @type {{ kind: "tower"; tower: (typeof state.towers)[0] } | null} */
+      let pick = null;
+      for (const tw of targetableFoeTowers(troop, state.towers)) {
+        const d = dist(troop.x, troop.y, tw.x, tw.y);
+        if (d < bestD) {
+          bestD = d;
+          pick = { kind: "tower", tower: tw };
+        }
+      }
+      return pick;
+    }
+
     let bestD = Infinity;
     /** @type {{ kind: "troop"; troop: typeof state.troops[0] } | { kind: "tower"; tower: (typeof state.towers)[0] } | { kind: "building"; building: (typeof state.buildings)[0] } | null} */
     let pick = null;
@@ -339,11 +475,29 @@
 
   function isRangedTroopType(troop) {
     const t = troop.type;
-    return t === "archer" || t === "spear_goblin" || t === "wizard";
+    return (
+      t === "archer" || t === "spear_goblin" || t === "wizard" || t === "witch" || t === "musketeer"
+    );
+  }
+
+  /** Skeleton / Goblin: no first-hit wind-up, interval-only melee cadence. */
+  function isFastMeleeSwarmType(troop) {
+    return troop.type === "skeleton" || troop.type === "goblin";
   }
 
   function playerInfiniteElixir(state) {
     return state.matchMode === "training" && !!state.testing && state.testing.infiniteElixir === true;
+  }
+
+  /** Side your cards/elixir control: bottom (player) or top (enemy). Battle mode is always player. */
+  function humanControlSide(state) {
+    if (state.matchMode !== "training" || !state.testing || !state.testing.playAsEnemy) return "player";
+    return "enemy";
+  }
+
+  /** Training AI uses the opposite side from the human. */
+  function trainingAiSide(state) {
+    return humanControlSide(state) === "enemy" ? "player" : "enemy";
   }
 
   /** Training AI card drops + enemy hut spears respect “enemy spawns” off. */
@@ -370,6 +524,13 @@
 
   function tryResolveTroopAggro(troop, state) {
     if (!troop.aggroKind || !troop.aggroId) return null;
+    if (
+      (troop.type === "chud" || troop.type === "mega_goblin_army") &&
+      (troop.aggroKind === "troop" || troop.aggroKind === "building")
+    ) {
+      clearTroopAggro(troop);
+      return null;
+    }
     if (troop.aggroKind === "troop") {
       const u = state.troops.find((x) => x.id === troop.aggroId);
       if (!u || u.hp <= 0 || u.side === troop.side) {
@@ -438,18 +599,20 @@
   }
 
   function bestBridgeFor(troop, gx, gy) {
+    ensureBridgeLaneOx(troop);
     let bestIx = 0;
     let bestCost = Infinity;
     for (let i = 0; i < BRIDGES.length; i++) {
       const b = BRIDGES[i];
+      const mx = bridgeMouthX(troop, b);
       const mouthMy =
         troop.side === "player"
-          ? { x: b.x, y: RIVER_BOT + 28 }
-          : { x: b.x, y: RIVER_TOP - 28 };
+          ? { x: mx, y: RIVER_BOT + 28 }
+          : { x: mx, y: RIVER_TOP - 28 };
       const mouthFar =
         troop.side === "player"
-          ? { x: b.x, y: RIVER_TOP - 26 }
-          : { x: b.x, y: RIVER_BOT + 26 };
+          ? { x: mx, y: RIVER_TOP - 26 }
+          : { x: mx, y: RIVER_BOT + 26 };
       const cost =
         dist(troop.x, troop.y, mouthMy.x, mouthMy.y) +
         dist(mouthFar.x, mouthFar.y, gx, gy);
@@ -462,6 +625,7 @@
   }
 
   function refreshRiverPath(troop, gx, gy) {
+    ensureBridgeLaneOx(troop);
     if (troop.path === "ford") {
       return;
     }
@@ -472,7 +636,7 @@
     troop.bridgeIx = bestBridgeFor(troop, gx, gy);
     const b = BRIDGES[troop.bridgeIx];
     if (troop.side === "player") {
-      const mouth = { x: b.x, y: RIVER_BOT + 28 };
+      const mouth = { x: bridgeMouthX(troop, b), y: RIVER_BOT + 28 };
       if (troop.y < RIVER_TOP - 6) {
         troop.path = "fight";
       } else if (troop.y > RIVER_BOT + 10) {
@@ -481,7 +645,7 @@
         troop.path = "ford";
       }
     } else {
-      const mouth = { x: b.x, y: RIVER_TOP - 28 };
+      const mouth = { x: bridgeMouthX(troop, b), y: RIVER_TOP - 28 };
       if (troop.y > RIVER_BOT + 6) {
         troop.path = "fight";
       } else if (troop.y < RIVER_TOP - 10) {
@@ -516,8 +680,10 @@
         continue;
       }
 
-      const b = BRIDGES[pickBridgeIx(troop.x, troop.y)];
-      const step = Math.sign(b.x - troop.x) * Math.min(Math.abs(b.x - troop.x), 4.5);
+      const br = BRIDGES[pickBridgeIx(troop.x, troop.y)];
+      ensureBridgeLaneOx(troop);
+      const targetX = bridgeMouthX(troop, br);
+      const step = Math.sign(targetX - troop.x) * Math.min(Math.abs(targetX - troop.x), 4.5);
       const sx = troop.x + step;
       if (!isInRiverWater(sx, troop.y)) troop.x = sx;
     }
@@ -586,6 +752,9 @@
   function resolveTroopCollisions(troops) {
     const padding = 4;
     const iters = 5;
+    /** Chud shoves foes aside (bridge body-block); other unit takes most of the separation. */
+    const CHUD_PUSH_OTHER = 1.45;
+    const CHUD_PUSH_SELF = 0.12;
     for (let k = 0; k < iters; k++) {
       for (let i = 0; i < troops.length; i++) {
         const a = troops[i];
@@ -599,8 +768,19 @@
           const nx = (b.x - a.x) / d;
           const ny = (b.y - a.y) / d;
           const pen = (minD - d) * 0.55;
-          slideNudge(a, -nx * pen, -ny * pen);
-          slideNudge(b, nx * pen, ny * pen);
+          const aChud = a.type === "chud" || a.type === "mega_goblin_army";
+          const bChud = b.type === "chud" || b.type === "mega_goblin_army";
+          const chudShoveFoe = a.side !== b.side;
+          if (chudShoveFoe && aChud && !bChud) {
+            slideNudge(a, -nx * pen * CHUD_PUSH_SELF, -ny * pen * CHUD_PUSH_SELF);
+            slideNudge(b, nx * pen * CHUD_PUSH_OTHER, ny * pen * CHUD_PUSH_OTHER);
+          } else if (chudShoveFoe && bChud && !aChud) {
+            slideNudge(a, -nx * pen * CHUD_PUSH_OTHER, -ny * pen * CHUD_PUSH_OTHER);
+            slideNudge(b, nx * pen * CHUD_PUSH_SELF, ny * pen * CHUD_PUSH_SELF);
+          } else {
+            slideNudge(a, -nx * pen, -ny * pen);
+            slideNudge(b, nx * pen, ny * pen);
+          }
         }
       }
     }
@@ -652,6 +832,57 @@
     if (b.hp < 0) b.hp = 0;
   }
 
+  function spawnGoblinsFromMegaTroopDeath(state, cx, cy, side) {
+    const faceY = side === "player" ? -1 : 1;
+    const offs = [
+      [0, -2],
+      [-11, 4],
+      [11, 4],
+      [-7, 12],
+      [7, 12],
+    ];
+    const start = state.troops.length;
+    for (const [ox, oy] of offs) {
+      const gx = cx + ox;
+      const gy = cy + oy * faceY;
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "goblin",
+        x: gx,
+        y: gy,
+        hp: GOBLIN_HP,
+        maxHp: GOBLIN_HP,
+        speed: SPEED_GOBLIN,
+        radius: 4,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(gx, gy),
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_SKELETON,
+        hitDamage: GOBLIN_DMG,
+        meleeRange: 15,
+        attackT: 0,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+      });
+    }
+    for (let i = start; i < state.troops.length; i++) {
+      const t = state.troops[i];
+      t.bridgeIx = pickBridgeIx(t.x, t.y);
+      ensureBridgeLaneOx(t);
+    }
+  }
+
+  function processMegaGoblinArmyDeathSpawns(state) {
+    for (const u of state.troops) {
+      if (u.type !== "mega_goblin_army" || u.hp > 0 || u.megaDeathSpawned) continue;
+      u.megaDeathSpawned = true;
+      spawnGoblinsFromMegaTroopDeath(state, u.x, u.y, u.side);
+    }
+  }
+
   function countSpearFromHut(state, hutId) {
     let n = 0;
     for (const u of state.troops) {
@@ -690,6 +921,7 @@
     });
     const u = state.troops[state.troops.length - 1];
     u.bridgeIx = pickBridgeIx(u.x, u.y);
+    ensureBridgeLaneOx(u);
   }
 
   function createGoblinHutBuilding(side, x, y, state) {
@@ -741,7 +973,7 @@
     if (!buildings || !buildings.length) return;
     for (const b of buildings) {
       if (b.hp <= 0 || b.kind !== "goblin_hut") continue;
-      if (!trainingEnemyAiEnabled(state) && b.side === "enemy") {
+      if (!trainingEnemyAiEnabled(state) && b.side === trainingAiSide(state)) {
         b.spawnAcc = 0;
         continue;
       }
@@ -753,6 +985,26 @@
       while (b.spawnAcc >= HUT_SPAWN_INTERVAL && countSpearFromHut(state, b.id) < MAX_SPEAR_PER_HUT) {
         b.spawnAcc -= HUT_SPAWN_INTERVAL;
         createSpearGoblinFromHut(state, b);
+      }
+    }
+  }
+
+  /** Spear (“dart”) goblins while a foe is in range — same cadence/cap as Goblin Hut; ring follows the unit. */
+  function updateMegaGoblinArmyHutSpawns(dt, state) {
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.type !== "mega_goblin_army") continue;
+      if (!trainingEnemyAiEnabled(state) && u.side === trainingAiSide(state)) {
+        u.spawnAcc = 0;
+        continue;
+      }
+      if (!foeInGoblinHutRange(u, state)) {
+        u.spawnAcc = 0;
+        continue;
+      }
+      u.spawnAcc = (u.spawnAcc || 0) + dt;
+      while (u.spawnAcc >= HUT_SPAWN_INTERVAL && countSpearFromHut(state, u.id) < MAX_SPEAR_PER_HUT) {
+        u.spawnAcc -= HUT_SPAWN_INTERVAL;
+        createSpearGoblinFromHut(state, u);
       }
     }
   }
@@ -783,7 +1035,7 @@
   }
 
   function meleeCooldownReady(troop, now) {
-    if (troop.type === "skeleton") {
+    if (isFastMeleeSwarmType(troop)) {
       return now - troop.lastMeleeAt >= troop.hitInterval;
     }
     if (!troop.hasHitOnce) {
@@ -904,6 +1156,109 @@
         stunUntil: 0,
         combatLocked: false,
       });
+    } else if (type === "witch") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "witch",
+        x,
+        y,
+        hp: WITCH_HP,
+        maxHp: WITCH_HP,
+        speed: SPEED_WITCH,
+        radius: 7,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        faceX: 0,
+        faceY,
+        fireAt: 0,
+        rangedDmg: WITCH_SHOT_DMG,
+        rangedRange: WITCH_RANGE,
+        rangedInterval: ATTACK_INTERVAL_WITCH,
+        attackT: 0,
+        stunUntil: 0,
+        combatLocked: false,
+        witchSpawnAcc: 0,
+      });
+    } else if (type === "musketeer") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "musketeer",
+        x,
+        y,
+        hp: MUSKETEER_HP,
+        maxHp: MUSKETEER_HP,
+        speed: SPEED_MUSKETEER,
+        radius: 7,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        faceX: 0,
+        faceY,
+        fireAt: 0,
+        rangedDmg: MUSKETEER_SHOT_DMG,
+        rangedRange: MUSKETEER_RANGE,
+        rangedInterval: ATTACK_INTERVAL_MUSKETEER,
+        attackT: 0,
+        stunUntil: 0,
+        combatLocked: false,
+      });
+    } else if (type === "chud") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "chud",
+        x,
+        y,
+        hp: CHUD_HP,
+        maxHp: CHUD_HP,
+        speed: SPEED_CHUD,
+        radius: CHUD_RADIUS,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        hasHitOnce: false,
+        firstHitDelay: MELEE_FIRST_HIT_DELAY,
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_CHUD,
+        hitDamage: CHUD_DMG,
+        meleeRange: CHUD_MELEE_RANGE,
+        attackT: 0,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+      });
+    } else if (type === "mega_goblin_army") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "mega_goblin_army",
+        x,
+        y,
+        hp: MEGA_GOBLIN_ARMY_HP,
+        maxHp: MEGA_GOBLIN_ARMY_HP,
+        speed: SPEED_CHUD,
+        radius: CHUD_RADIUS,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        hasHitOnce: false,
+        firstHitDelay: MELEE_FIRST_HIT_DELAY,
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_CHUD,
+        hitDamage: CHUD_DMG,
+        meleeRange: CHUD_MELEE_RANGE,
+        attackT: 0,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+        megaDeathSpawned: false,
+        spawnAcc: 0,
+      });
     } else if (type === "archers") {
       const pair = [
         [-14, -4],
@@ -965,6 +1320,68 @@
           combatLocked: false,
         });
       }
+    } else if (type === "goblin_gang") {
+      const spearOffs = [
+        [-13, -5],
+        [13, -5],
+        [0, -11],
+        [0, 1],
+      ];
+      for (const [ox, oy] of spearOffs) {
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "spear_goblin",
+          x: x + ox,
+          y: y + oy,
+          hp: SPEAR_GOBLIN_HP,
+          maxHp: SPEAR_GOBLIN_HP,
+          speed: SPEAR_GOBLIN_SPEED,
+          radius: 3.5,
+          path: "deploy",
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          spawnTime: state.time,
+          faceX: 0,
+          faceY,
+          fireAt: 0,
+          rangedDmg: SPEAR_GOBLIN_DMG,
+          rangedRange: SPEAR_GOBLIN_RANGE,
+          rangedInterval: SPEAR_GOBLIN_INTERVAL,
+          attackT: 0,
+          stunUntil: 0,
+          combatLocked: false,
+        });
+      }
+      const gobOffs = [
+        [-10, 9],
+        [10, 9],
+        [-6, 15],
+        [6, 15],
+      ];
+      for (const [ox, oy] of gobOffs) {
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "goblin",
+          x: x + ox,
+          y: y + oy,
+          hp: GOBLIN_HP,
+          maxHp: GOBLIN_HP,
+          speed: SPEED_GOBLIN,
+          radius: 4,
+          path: "deploy",
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          lastMeleeAt: -999,
+          hitInterval: ATTACK_INTERVAL_SKELETON,
+          hitDamage: GOBLIN_DMG,
+          meleeRange: 15,
+          attackT: 0,
+          faceX: 0,
+          faceY,
+          stunUntil: 0,
+          combatLocked: false,
+        });
+      }
     } else if (type === "skarmy") {
       for (let i = 0; i < 15; i++) {
         const a = i * 1.37;
@@ -984,7 +1401,7 @@
           path: "deploy",
           bridgeIx: pickBridgeIx(x + ox, y + oy),
           lastMeleeAt: -999,
-          hitInterval: ATTACK_INTERVAL_SKARMY,
+          hitInterval: ATTACK_INTERVAL_SKELETON,
           hitDamage: SKELETON_DMG,
           meleeRange: 15,
           attackT: 0,
@@ -994,7 +1411,67 @@
           combatLocked: false,
         });
       }
-    } else {
+    } else if (type === "mega_army") {
+      const golden = 2.39996322972865332;
+      for (let i = 0; i < MEGA_ARMY_COUNT; i++) {
+        const a = i * golden;
+        const r = 3.1 * Math.sqrt(i + 1);
+        const ox = Math.cos(a) * r * 0.88;
+        const oy = Math.sin(a) * r * 0.72;
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "skeleton",
+          x: x + ox,
+          y: y + oy,
+          hp: SKELETON_HP,
+          maxHp: SKELETON_HP,
+          speed: SPEED_SKELETON,
+          radius: 4,
+          path: "deploy",
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          lastMeleeAt: -999,
+          hitInterval: ATTACK_INTERVAL_SKELETON,
+          hitDamage: SKELETON_DMG,
+          meleeRange: 15,
+          attackT: 0,
+          faceX: 0,
+          faceY,
+          stunUntil: 0,
+          combatLocked: false,
+        });
+      }
+    } else if (type === "goblins") {
+      const offs = [
+        [0, 0],
+        [-8, 6],
+        [8, 6],
+      ];
+      for (const [ox, oy] of offs) {
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "goblin",
+          x: x + ox,
+          y: y + oy,
+          hp: GOBLIN_HP,
+          maxHp: GOBLIN_HP,
+          speed: SPEED_GOBLIN,
+          radius: 4,
+          path: "deploy",
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          lastMeleeAt: -999,
+          hitInterval: ATTACK_INTERVAL_SKELETON,
+          hitDamage: GOBLIN_DMG,
+          meleeRange: 15,
+          attackT: 0,
+          faceX: 0,
+          faceY,
+          stunUntil: 0,
+          combatLocked: false,
+        });
+      }
+    } else if (type === "skeleton") {
       const offs = [
         [0, 0],
         [-8, 6],
@@ -1028,15 +1505,18 @@
     for (let i = start; i < state.troops.length; i++) {
       const t = state.troops[i];
       t.bridgeIx = pickBridgeIx(t.x, t.y);
+      ensureBridgeLaneOx(t);
     }
   }
 
   function deployAnchor(troop) {
+    ensureBridgeLaneOx(troop);
     const b = BRIDGES[troop.bridgeIx ?? 0];
+    const mx = bridgeMouthX(troop, b);
     if (troop.side === "player") {
-      return { x: b.x, y: RIVER_BOT + 28 };
+      return { x: mx, y: RIVER_BOT + 28 };
     }
-    return { x: b.x, y: RIVER_TOP - 28 };
+    return { x: mx, y: RIVER_TOP - 28 };
   }
 
   function updateTroopNavAndMove(dt, troop, state) {
@@ -1091,13 +1571,15 @@
     }
 
     if (troop.path === "ford") {
-      let aimX = b.x;
-      if (tx != null) {
-        aimX = clamp(tx, b.x - BRIDGE_HALF_W + 3, b.x + BRIDGE_HALF_W - 3);
-      }
+      ensureBridgeLaneOx(troop);
+      const laneX = clamp(
+        bridgeMouthX(troop, b),
+        b.x - BRIDGE_HALF_W + 2,
+        b.x + BRIDGE_HALF_W - 2,
+      );
       troop.x = clamp(
         troop.x +
-          Math.sign(aimX - troop.x) * Math.min(Math.abs(aimX - troop.x), step * 1.65),
+          Math.sign(laneX - troop.x) * Math.min(Math.abs(laneX - troop.x), step * 1.65),
         b.x - BRIDGE_HALF_W + 2,
         b.x + BRIDGE_HALF_W - 2,
       );
@@ -1128,6 +1610,7 @@
     troop.faceY = (ty - troop.y) / d;
     if (troop.type === "mini_pekka") troop.attackT = 0.32;
     else if (troop.type === "knight") troop.attackT = 0.26;
+    else if (troop.type === "chud" || troop.type === "mega_goblin_army") troop.attackT = 0.38;
     else if (troop.type === "mega_knight") troop.attackT = 0.34;
     else if (isRangedTroopType(troop)) troop.attackT = 0.22;
     else troop.attackT = 0.18;
@@ -1151,7 +1634,7 @@
       if (o.hp < 0) o.hp = 0;
       troop.lastMeleeAt = now;
       troop.combatLocked = true;
-      if (troop.type !== "skeleton") troop.hasHitOnce = true;
+      if (!isFastMeleeSwarmType(troop)) troop.hasHitOnce = true;
       triggerAttackAnim(troop, o.x, o.y);
       return;
     }
@@ -1163,7 +1646,7 @@
       applyBuildingDamage(state, bd, troop.hitDamage);
       troop.lastMeleeAt = now;
       troop.combatLocked = true;
-      if (troop.type !== "skeleton") troop.hasHitOnce = true;
+      if (!isFastMeleeSwarmType(troop)) troop.hasHitOnce = true;
       triggerAttackAnim(troop, bd.x, bd.y);
       return;
     }
@@ -1175,7 +1658,7 @@
     applyTowerDamage(state, tw, troop.hitDamage);
     troop.lastMeleeAt = now;
     troop.combatLocked = true;
-    if (troop.type !== "skeleton") troop.hasHitOnce = true;
+    if (!isFastMeleeSwarmType(troop)) troop.hasHitOnce = true;
     triggerAttackAnim(troop, tw.x, tw.y);
   }
 
@@ -1296,6 +1779,8 @@
       testing: {
         enemySpawns: true,
         infiniteElixir: false,
+        /** Training: you deploy on the top (enemy) side; AI uses the bottom. */
+        playAsEnemy: false,
       },
     };
   }
@@ -1528,7 +2013,15 @@
     const n = norm(tx - unit.x, ty - unit.y);
     const yOff = unit.side === "enemy" ? 8 : -8;
     const projKind =
-      unit.type === "spear_goblin" ? "spear" : unit.type === "wizard" ? "wizard" : "archer";
+      unit.type === "spear_goblin"
+        ? "spear"
+        : unit.type === "wizard"
+          ? "wizard"
+          : unit.type === "witch"
+            ? "witch"
+            : unit.type === "musketeer"
+              ? "musket"
+              : "archer";
     /** @type {"troop" | "tower" | "building"} */
     let targetKind;
     let targetId;
@@ -1551,7 +2044,8 @@
       fromSide: unit.side,
       hitsTowers: true,
       projKind,
-      projRadius: unit.type === "wizard" ? 6 : 4,
+      projRadius:
+        unit.type === "wizard" ? 6 : unit.type === "witch" ? 5.5 : unit.type === "musketeer" ? 4.5 : 4,
       homing: true,
       targetKind,
       targetId,
@@ -1767,10 +2261,13 @@
     const reach = megaKnightGroundReach(troop, ct);
 
     if (d <= reach) {
-      applyFullAoEToFoes(state, troop.x, troop.y, troop.side, MEGA_KNIGHT_GROUND_SPLASH_R, KNIGHT_DMG);
+      const b = MEGA_KNIGHT_GROUND_AIM_BLEND;
+      const cx = troop.x + (tx - troop.x) * b;
+      const cy = troop.y + (ty - troop.y) * b;
+      applyFullAoEToFoes(state, cx, cy, troop.side, MEGA_KNIGHT_GROUND_SPLASH_R, KNIGHT_DMG);
       state.wizardSplashFx.push({
-        cx: troop.x,
-        cy: troop.y,
+        cx,
+        cy,
         until: state.time + 0.34,
         radius: MEGA_KNIGHT_GROUND_SPLASH_R,
         kind: "mega_ground",
@@ -1871,23 +2368,17 @@
         }
         if (dist(p.x, p.y, homingResolved.x, homingResolved.y) < homingResolved.hitR + pr + PROJECTILE_HIT_FUDGE) {
           applyProjectileDamageResolved(state, p, homingResolved);
-          if (p.projKind === "wizard") {
-            const splash = Math.max(1, Math.floor(p.dmg * WIZARD_SPLASH_FRACTION));
-            applyWizardSplashAround(
-              state,
-              homingResolved.x,
-              homingResolved.y,
-              p.fromSide,
-              WIZARD_SPLASH_RADIUS,
-              splash,
-              homingResolved,
-            );
+          if (p.projKind === "wizard" || p.projKind === "witch") {
+            const splR = p.projKind === "witch" ? WITCH_SPLASH_RADIUS : WIZARD_SPLASH_RADIUS;
+            const splF = p.projKind === "witch" ? WITCH_SPLASH_FRACTION : WIZARD_SPLASH_FRACTION;
+            const splash = Math.max(1, Math.floor(p.dmg * splF));
+            applyWizardSplashAround(state, homingResolved.x, homingResolved.y, p.fromSide, splR, splash, homingResolved);
             state.wizardSplashFx.push({
               cx: homingResolved.x,
               cy: homingResolved.y,
               until: state.time + 0.42,
-              radius: WIZARD_SPLASH_RADIUS,
-              kind: "wizard",
+              radius: splR,
+              kind: p.projKind === "witch" ? "witch" : "wizard",
             });
           }
           projectiles.splice(i, 1);
@@ -1938,6 +2429,7 @@
     state.enemyBrainAcc += dt;
     if (state.enemyBrainAcc < 5.5) return;
     state.enemyBrainAcc = 0;
+    const aiSide = trainingAiSide(state);
     const slots = [];
     for (let s = 0; s < 4; s++) {
       const c = state.enemyHand[s];
@@ -1950,73 +2442,190 @@
 
     if (card === "arrows") {
       const px = clamp(120 + Math.random() * 560, 24, W - 24);
-      const py = clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
       state.enemyElixir -= cost;
-      applyArrowsStrike(px, py, "enemy", state);
+      applyArrowsStrike(px, py, aiSide, state);
       cycleEnemyHand(state, slot);
       return;
     }
     if (card === "fireball") {
       const px = clamp(120 + Math.random() * 560, 24, W - 24);
-      const py = clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
       state.enemyElixir -= cost;
-      applyFireballStrike(px, py, "enemy", state);
+      applyFireballStrike(px, py, aiSide, state);
       cycleEnemyHand(state, slot);
       return;
     }
     if (card === "zap") {
       const px = clamp(120 + Math.random() * 560, 24, W - 24);
-      const py = clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
       state.enemyElixir -= cost;
-      applyZapStrike(px, py, "enemy", state);
+      applyZapStrike(px, py, aiSide, state);
       cycleEnemyHand(state, slot);
       return;
     }
 
     const x = 260 + Math.random() * 280;
-    const y = 52 + Math.random() * 70;
-    if (!canDeploy("enemy", x, y)) return;
+    const y =
+      aiSide === "enemy"
+        ? 52 + Math.random() * 70
+        : RIVER_BOT + 45 + Math.random() * Math.max(40, H - RIVER_BOT - 90);
+    if (!canDeploy(state, aiSide, x, y)) return;
     state.enemyElixir -= cost;
-    queueDeploySpawn(state, "enemy", card, x, y);
+    queueDeploySpawn(state, aiSide, card, x, y);
     cycleEnemyHand(state, slot);
   }
 
-  function canDeploy(side, x, y) {
+  function canDeploy(state, side, x, y) {
     if (x < 48 || x > W - 48) return false;
     if (isInRiverWater(x, y)) return false;
+    const towers = state.towers || [];
+    const eL = towers.find((t) => t.id === "eL");
+    const eR = towers.find((t) => t.id === "eR");
+    const pL = towers.find((t) => t.id === "pL");
+    const pR = towers.find((t) => t.id === "pR");
     if (side === "player") {
-      return y > RIVER_BOT + 32 && y < H - 36;
+      if (y > RIVER_BOT && y < H - 36) return true;
+      if (y >= 36 && y <= RIVER_BOT) {
+        if (eL && eL.hp <= 0 && inPrincessFallGainZone("player", "L", x, y)) return true;
+        if (eR && eR.hp <= 0 && inPrincessFallGainZone("player", "R", x, y)) return true;
+      }
+      return false;
     }
-    return y < RIVER_TOP - 32 && y > 36;
+    if (y < RIVER_TOP && y > 36) return true;
+    if (y >= RIVER_TOP && y <= H - 36) {
+      if (pL && pL.hp <= 0 && inPrincessFallGainZone("enemy", "L", x, y)) return true;
+      if (pR && pR.hp <= 0 && inPrincessFallGainZone("enemy", "R", x, y)) return true;
+    }
+    return false;
   }
 
   /** Nudge (x,y) until canDeploy — fixes rare PvP mirror misses from float / tap drift. */
-  function snapToDeployable(side, x, y) {
-    if (canDeploy(side, x, y)) return { x, y };
+  function snapToDeployable(state, side, x, y) {
+    if (canDeploy(state, side, x, y)) return { x, y };
     for (let d = 0; d <= 36; d += 3) {
       for (const sx of [-1, 0, 1]) {
         for (const sy of [-1, 0, 1]) {
           if (sx === 0 && sy === 0 && d === 0) continue;
           const xx = x + sx * d;
           const yy = y + sy * d;
-          if (canDeploy(side, xx, yy)) return { x: xx, y: yy };
+          if (canDeploy(state, side, xx, yy)) return { x: xx, y: yy };
         }
       }
     }
     return null;
   }
 
+  function isSpellCardId(card) {
+    return card === "arrows" || card === "fireball" || card === "zap";
+  }
+
+  function drawDeployZoneOverlay(ctx, state) {
+    if (state.over) return;
+    const slot = state.selectedSlot;
+    if (slot === null || slot === undefined) return;
+    const card = state.hand[slot];
+    if (!card) return;
+
+    if (isSpellCardId(card)) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(251, 191, 36, 0.75)";
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([10, 7]);
+      ctx.strokeRect(10.5, 10.5, W - 21, H - 21);
+      ctx.fillStyle = "rgba(251, 191, 36, 0.06)";
+      ctx.fillRect(10, 10, W - 20, H - 20);
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(254, 243, 199, 0.85)";
+      ctx.font = "600 11px system-ui";
+      ctx.fillText("Spell — anywhere in arena", W / 2 - 72, 24);
+      ctx.restore();
+      return;
+    }
+
+    ctx.save();
+    const step = DEPLOY_HINT_STEP;
+    ctx.fillStyle = "rgba(34, 197, 94, 0.11)";
+    const hs = humanControlSide(state);
+    for (let gx = 48 + step / 2; gx < W - 48; gx += step) {
+      for (let gy = 36 + step / 2; gy < H - 36; gy += step) {
+        if (canDeploy(state, hs, gx, gy)) {
+          ctx.fillRect(gx - step * 0.45, gy - step * 0.45, step * 0.9, step * 0.9);
+        }
+      }
+    }
+    ctx.strokeStyle = "rgba(34, 197, 94, 0.65)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([9, 6]);
+    const eL = state.towers.find((t) => t.id === "eL");
+    const eR = state.towers.find((t) => t.id === "eR");
+    const pL = state.towers.find((t) => t.id === "pL");
+    const pR = state.towers.find((t) => t.id === "pR");
+    if (hs === "player") {
+      ctx.strokeRect(48.5, RIVER_BOT + 0.5, W - 97, H - 36 - RIVER_BOT - 1);
+      if (eL && eL.hp <= 0) {
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.85)";
+        const g = princessFallGainBounds("player", "L");
+        ctx.strokeRect(g.x0 + 0.5, g.y0 + 0.5, g.x1 - g.x0 - 0.5, g.y1 - g.y0 - 0.5);
+      }
+      if (eR && eR.hp <= 0) {
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.85)";
+        const g = princessFallGainBounds("player", "R");
+        ctx.strokeRect(g.x0 + 0.5, g.y0 + 0.5, g.x1 - g.x0 - 0.5, g.y1 - g.y0 - 0.5);
+      }
+    } else {
+      ctx.strokeRect(48.5, 36.5, W - 97, RIVER_TOP - 36.5 - 1);
+      if (pL && pL.hp <= 0) {
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.85)";
+        const g = princessFallGainBounds("enemy", "L");
+        ctx.strokeRect(g.x0 + 0.5, g.y0 + 0.5, g.x1 - g.x0 - 0.5, g.y1 - g.y0 - 0.5);
+      }
+      if (pR && pR.hp <= 0) {
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.85)";
+        const g = princessFallGainBounds("enemy", "R");
+        ctx.strokeRect(g.x0 + 0.5, g.y0 + 0.5, g.x1 - g.x0 - 0.5, g.y1 - g.y0 - 0.5);
+      }
+    }
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(187, 247, 208, 0.9)";
+    ctx.font = "600 11px system-ui";
+    ctx.fillText(
+      hs === "player"
+        ? "Deploy zone — bridges cross the river"
+        : "Deploy zone (top team) — bridges cross the river",
+      W / 2 - 148,
+      24,
+    );
+    ctx.restore();
+  }
+
   function cardCost(card) {
     if (card === "mini_pekka") return MINI_PEKKA_COST;
     if (card === "knight") return KNIGHT_COST;
     if (card === "wizard") return WIZARD_COST;
+    if (card === "witch") return WITCH_COST;
+    if (card === "musketeer") return MUSKETEER_COST;
     if (card === "mega_knight") return MEGA_KNIGHT_COST;
     if (card === "archers") return ARCHERS_COST;
+    if (card === "goblins") return GOBLINS_COST;
+    if (card === "goblin_gang") return GOBLIN_GANG_COST;
+    if (card === "chud") return CHUD_COST;
     if (card === "spear_goblins") return SPEAR_GOBLINS_COST;
     if (card === "skarmy") return SKARMY_COST;
+    if (card === "mega_army") return MEGA_ARMY_COST;
     if (card === "arrows") return ARROWS_COST;
     if (card === "fireball") return FIREBALL_COST;
     if (card === "goblin_hut") return GOBLIN_HUT_COST;
+    if (card === "mega_goblin_army") return MEGA_GOBLIN_ARMY_COST;
     if (card === "zap") return ZAP_COST;
     return SKELETON_COST;
   }
@@ -2029,16 +2638,27 @@
     if (cardId === "knight") return { name: "Knight", img: "assets/knight-w0.svg", cost };
     if (cardId === "wizard")
       return { name: "Wizard", img: "assets/wizard-card.svg", cost };
+    if (cardId === "witch") return { name: "Witch", img: "assets/witch-card.svg", cost };
     if (cardId === "mega_knight")
       return { name: "Mega Knight", img: "assets/mega-knight-card.svg", cost };
+    if (cardId === "musketeer")
+      return { name: "Musketeer", img: "assets/musketeer-card.svg", cost };
     if (cardId === "skeleton") return { name: "Skeletons", img: "assets/skeleton-w0.svg", cost };
+    if (cardId === "goblins") return { name: "Goblins", img: "assets/goblins-card.svg", cost };
+    if (cardId === "goblin_gang")
+      return { name: "Goblin Gang", img: "assets/goblin-gang-card.svg", cost };
+    if (cardId === "chud") return { name: "Chud", img: "assets/chud-card.svg", cost };
     if (cardId === "archers") return { name: "Archers", img: "assets/archer-w0.svg", cost };
     if (cardId === "spear_goblins")
       return { name: "Spear Goblins", img: "assets/spear-goblins-card.svg", cost };
-    if (cardId === "skarmy") return { name: "Skarmy", img: "assets/skeleton-w1.svg", cost };
+    if (cardId === "skarmy") return { name: "Skarmy", img: "assets/skarmy-card.svg", cost };
+    if (cardId === "mega_army")
+      return { name: "Mega Army", img: "assets/mega-army-card.svg", cost };
     if (cardId === "arrows") return { name: "Arrows", img: "assets/arrows-card.svg", cost };
     if (cardId === "fireball") return { name: "Fireball", img: "assets/fireball-card.svg", cost };
     if (cardId === "goblin_hut") return { name: "Goblin Hut", img: "assets/goblin-hut-card.svg", cost };
+    if (cardId === "mega_goblin_army")
+      return { name: "Mega Goblin Army", img: "assets/mega-goblin-army-card.svg", cost };
     if (cardId === "zap") return { name: "Zap", img: "assets/zap-card.svg", cost };
     return { name: String(cardId), img: "assets/skeleton-w0.svg", cost };
   }
@@ -2058,14 +2678,29 @@
   function spawnUnitOrBuildingNow(state, side, card, x, y) {
     if (card === "goblin_hut") {
       createGoblinHutBuilding(side, x, y, state);
-    } else if (card === "mini_pekka" || card === "knight" || card === "wizard" || card === "mega_knight") {
+    } else if (
+      card === "mini_pekka" ||
+      card === "knight" ||
+      card === "wizard" ||
+      card === "witch" ||
+      card === "mega_knight" ||
+      card === "musketeer" ||
+      card === "chud" ||
+      card === "mega_goblin_army"
+    ) {
       createTroop(side, card, x, y, state);
     } else if (card === "archers") {
       createTroop(side, "archers", x, y, state);
     } else if (card === "spear_goblins") {
       createTroop(side, "spear_goblins", x, y, state);
+    } else if (card === "goblins") {
+      createTroop(side, "goblins", x, y, state);
+    } else if (card === "goblin_gang") {
+      createTroop(side, "goblin_gang", x, y, state);
     } else if (card === "skarmy") {
       createTroop(side, "skarmy", x, y, state);
+    } else if (card === "mega_army") {
+      createTroop(side, "mega_army", x, y, state);
     } else {
       createTroop(side, "skeleton", x, y, state);
     }
@@ -2189,6 +2824,11 @@
     seenMoveIds: /** @type {Set<string>} */ (new Set()),
     seenEmoteIds: /** @type {Set<string>} */ (new Set()),
     endWritten: false,
+    /** Elapsed time accumulator for periodic arena publish (authority only). */
+    syncAcc: 0,
+    /** Monotonic seq per match for arena snapshots (authority increments). */
+    localArenaSeq: 0,
+    lastAppliedArenaSeq: 0,
   };
 
   function tearDownBattleNet() {
@@ -2211,6 +2851,91 @@
     battleNet.seenEmoteIds = new Set();
     battleNet.endWritten = false;
     battleNet._endRetries = 0;
+    battleNet.syncAcc = 0;
+    battleNet.localArenaSeq = 0;
+    battleNet.lastAppliedArenaSeq = 0;
+  }
+
+  function isArenaSyncAuthor() {
+    const a = battleNet.guestId;
+    const b = battleNet.opponentGuestId;
+    return !!(a && b && a < b);
+  }
+
+  function buildArenaSyncPayload(state) {
+    const g = battleNet.guestId;
+    const o = battleNet.opponentGuestId;
+    /** @type {Record<string, number>} */
+    const elixirByGuest = {};
+    if (g && o) {
+      elixirByGuest[g] = Math.round(state.playerElixir * 100) / 100;
+      elixirByGuest[o] = Math.round(state.enemyElixir * 100) / 100;
+    }
+    return {
+      time: state.time,
+      uid: state.uid,
+      towers: JSON.parse(JSON.stringify(state.towers)),
+      troops: JSON.parse(JSON.stringify(state.troops)),
+      buildings: JSON.parse(JSON.stringify(state.buildings || [])),
+      projectiles: JSON.parse(JSON.stringify(state.projectiles || [])),
+      pendingDeploys: JSON.parse(JSON.stringify(state.pendingDeploys || [])),
+      crownsPlayer: state.crownsPlayer,
+      crownsEnemy: state.crownsEnemy,
+      over: state.over,
+      winner: state.winner,
+      elixirByGuest,
+    };
+  }
+
+  function applyArenaSyncPayload(state, snap) {
+    if (!snap || typeof snap !== "object") return;
+    state.time = snap.time;
+    state.uid = snap.uid;
+    state.towers = JSON.parse(JSON.stringify(snap.towers));
+    state.troops = JSON.parse(JSON.stringify(snap.troops));
+    state.buildings = JSON.parse(JSON.stringify(snap.buildings || []));
+    state.projectiles = JSON.parse(JSON.stringify(snap.projectiles || []));
+    state.pendingDeploys = JSON.parse(JSON.stringify(snap.pendingDeploys || []));
+    state.crownsPlayer = snap.crownsPlayer;
+    state.crownsEnemy = snap.crownsEnemy;
+    state.over = snap.over;
+    state.winner = snap.winner;
+    const g = battleNet.guestId;
+    const o = battleNet.opponentGuestId;
+    const eg = snap.elixirByGuest;
+    if (eg && g != null && typeof eg[g] === "number") {
+      state.playerElixir = clamp(0, MAX_ELIXIR, eg[g]);
+    }
+    if (eg && o != null && typeof eg[o] === "number") {
+      state.enemyElixir = clamp(0, MAX_ELIXIR, eg[o]);
+    }
+    for (const u of state.troops) {
+      ensureBridgeLaneOx(u);
+      if (u.type === "mega_goblin_army" && u.hp <= 0) u.megaDeathSpawned = true;
+    }
+  }
+
+  function pushArenaSync(state) {
+    if (!battleNet.matchId || !isArenaSyncAuthor() || state.over) return;
+    if (typeof firebase === "undefined" || !firebase.apps.length) return;
+    const p = buildArenaSyncPayload(state);
+    battleNet.localArenaSeq += 1;
+    firebase
+      .firestore()
+      .collection("battle_matches")
+      .doc(battleNet.matchId)
+      .set(
+        {
+          arenaSyncV1: {
+            seq: battleNet.localArenaSeq,
+            author: battleNet.guestId,
+            json: JSON.stringify(p),
+            at: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+        { merge: true },
+      )
+      .catch(() => {});
   }
 
   function applyAuthoritativeResult(wonByGuest) {
@@ -2272,15 +2997,22 @@
       card !== "mini_pekka" &&
       card !== "knight" &&
       card !== "skeleton" &&
+      card !== "goblins" &&
+      card !== "goblin_gang" &&
       card !== "archers" &&
       card !== "skarmy" &&
+      card !== "mega_army" &&
       card !== "arrows" &&
       card !== "fireball" &&
       card !== "goblin_hut" &&
+      card !== "mega_goblin_army" &&
       card !== "zap" &&
       card !== "spear_goblins" &&
       card !== "wizard" &&
-      card !== "mega_knight"
+      card !== "mega_knight" &&
+      card !== "musketeer" &&
+      card !== "chud" &&
+      card !== "witch"
     )
       return;
     const cost = cardCost(card);
@@ -2306,7 +3038,7 @@
       applyZapStrike(cx, cy, "enemy", state);
       return;
     }
-    const snapped = snapToDeployable("enemy", x, yMir);
+    const snapped = snapToDeployable(state, "enemy", x, yMir);
     if (!snapped) return;
     state.enemyElixir = Math.max(0, state.enemyElixir - cost);
     queueDeploySpawn(state, "enemy", card, snapped.x, snapped.y);
@@ -2319,6 +3051,9 @@
     battleNet.matchId = matchId;
     battleNet.guestId = guestId;
     battleNet.seenMoveIds = new Set();
+    battleNet.syncAcc = 0;
+    battleNet.localArenaSeq = 0;
+    battleNet.lastAppliedArenaSeq = 0;
     const db = firebase.firestore();
     const mref = db.collection("battle_matches").doc(matchId);
     mref
@@ -2332,9 +3067,31 @@
       .catch(() => {});
 
     battleNet.unsubMatch = mref.onSnapshot((snap) => {
-      const r = snap.data()?.result?.wonBy;
-      if (!r || typeof r !== "string") return;
-      applyAuthoritativeResult(r);
+      const d = snap.data();
+      if (!d) return;
+      const pl = d.players;
+      if (Array.isArray(pl) && pl.length >= 2) {
+        const opp = pl.find((x) => x !== guestId) || null;
+        if (opp) battleNet.opponentGuestId = opp;
+      }
+      const r = d.result?.wonBy;
+      if (r && typeof r === "string") applyAuthoritativeResult(r);
+
+      const as = d.arenaSyncV1;
+      if (!as || typeof as.json !== "string") return;
+      if (isArenaSyncAuthor()) return;
+      const seq = Number(as.seq) || 0;
+      if (seq <= battleNet.lastAppliedArenaSeq) return;
+      try {
+        const payload = JSON.parse(as.json);
+        const st = stateRef.current;
+        if (st && st.matchMode === "battle") {
+          applyArenaSyncPayload(st, payload);
+          battleNet.lastAppliedArenaSeq = seq;
+        }
+      } catch (_) {
+        /* ignore corrupt snapshot */
+      }
     });
 
     const cref = mref.collection("moves");
@@ -2418,6 +3175,8 @@
     const inf = playerInfiniteElixir(state);
     if (!inf && state.playerElixir < cost) return false;
 
+    const hs = humanControlSide(state);
+
     let px = x;
     let py = y;
 
@@ -2427,7 +3186,7 @@
         py = clamp(y, 16, H - 16);
       }
       if (!inf) state.playerElixir -= cost;
-      applyArrowsStrike(px, py, "player", state);
+      applyArrowsStrike(px, py, hs, state);
       cyclePlayerHand(state, slot);
       state.selectedSlot = null;
       pushBattleDeploy(card, px, py);
@@ -2440,7 +3199,7 @@
         py = clamp(y, 16, H - 16);
       }
       if (!inf) state.playerElixir -= cost;
-      applyFireballStrike(px, py, "player", state);
+      applyFireballStrike(px, py, hs, state);
       cyclePlayerHand(state, slot);
       state.selectedSlot = null;
       pushBattleDeploy(card, px, py);
@@ -2453,25 +3212,71 @@
         py = clamp(y, 16, H - 16);
       }
       if (!inf) state.playerElixir -= cost;
-      applyZapStrike(px, py, "player", state);
+      applyZapStrike(px, py, hs, state);
       cyclePlayerHand(state, slot);
       state.selectedSlot = null;
       pushBattleDeploy(card, px, py);
       return true;
     }
 
-    if (!canDeploy("player", px, py)) {
-      const sn = snapToDeployable("player", px, py);
+    if (!canDeploy(state, hs, px, py)) {
+      const sn = snapToDeployable(state, hs, px, py);
       if (!sn) return false;
       px = sn.x;
       py = sn.y;
     }
     if (!inf) state.playerElixir -= cost;
-    queueDeploySpawn(state, "player", card, px, py);
+    queueDeploySpawn(state, hs, card, px, py);
     cyclePlayerHand(state, slot);
     state.selectedSlot = null;
     pushBattleDeploy(card, px, py);
     return true;
+  }
+
+  function spawnSkeletonsFromWitch(witch, state) {
+    const faceY = witch.side === "player" ? -1 : 1;
+    const offs = [
+      [-7, 5],
+      [7, 5],
+    ];
+    for (const [ox, oy] of offs) {
+      const sx = witch.x + ox;
+      const sy = witch.y + oy * faceY;
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side: witch.side,
+        type: "skeleton",
+        x: sx,
+        y: sy,
+        hp: SKELETON_HP,
+        maxHp: SKELETON_HP,
+        speed: SPEED_SKELETON,
+        radius: 4,
+        path: "fight",
+        bridgeIx: pickBridgeIx(sx, sy),
+        spawnTime: state.time,
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_SKELETON,
+        hitDamage: SKELETON_DMG,
+        meleeRange: 15,
+        attackT: 0,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+      });
+      ensureBridgeLaneOx(state.troops[state.troops.length - 1]);
+    }
+  }
+
+  function updateWitchSpawns(dt, state) {
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.type !== "witch") continue;
+      u.witchSpawnAcc = (u.witchSpawnAcc || 0) + dt;
+      if (u.witchSpawnAcc < WITCH_SPAWN_INTERVAL) continue;
+      u.witchSpawnAcc = 0;
+      spawnSkeletonsFromWitch(u, state);
+    }
   }
 
   function stepSimulation(dt, state) {
@@ -2491,6 +3296,7 @@
     if (playerInfiniteElixir(state)) state.playerElixir = MAX_ELIXIR;
     state.enemyElixir = Math.min(MAX_ELIXIR, state.enemyElixir + ELIXIR_PER_SEC * dt);
     processPendingDeploys(state);
+    updateWitchSpawns(dt, state);
 
     if (!battleNet.matchId) {
       enemyBrain(dt, state);
@@ -2507,6 +3313,7 @@
     }
     resolveTroopCollisions(state.troops);
     resolveTroopBuildingCollisions(state.troops, state.buildings);
+    updateMegaGoblinArmyHutSpawns(dt, state);
     for (const u of state.troops) {
       if (u.hp > 0 && u.attackT > 0) {
         u.attackT -= dt;
@@ -2528,6 +3335,8 @@
     for (const tower of state.towers) {
       towerShoot(state, tower, now);
     }
+
+    processMegaGoblinArmyDeathSpawns(state);
   }
 
   function drawCrowns(ctx, state) {
@@ -2699,11 +3508,13 @@
   }
 
   function pickWalkImage(frames, wf) {
-    let im = frames[wf];
-    if (im && im.complete && im.naturalWidth > 0) return im;
-    im = frames[1 - wf];
-    if (im && im.complete && im.naturalWidth > 0) return im;
-    return frames[wf];
+    const n = frames.length;
+    const i0 = ((wf % n) + n) % n;
+    for (let k = 0; k < n; k++) {
+      const im = frames[(i0 + k) % n];
+      if (im && im.complete && im.naturalWidth > 0) return im;
+    }
+    return frames[i0];
   }
 
   function troopVisual(u, state) {
@@ -2732,6 +3543,18 @@
         fallback: "#94a3b8",
       };
     }
+    if (u.type === "chud" || u.type === "mega_goblin_army") {
+      return {
+        img: pickWalkImage(SPRITES.chudWalk, wf),
+        s: 46,
+        atkMax: 0.38,
+        lunge: 7,
+        tilt: 0.34,
+        slashW: 2.8,
+        arcR: 20,
+        fallback: "#15803d",
+      };
+    }
     if (u.type === "mega_knight") {
       return {
         img: pickWalkImage(SPRITES.megaKnightWalk, wf),
@@ -2747,7 +3570,7 @@
     if (u.type === "archer") {
       return {
         img: pickWalkImage(SPRITES.archerWalk, wf),
-        s: 12,
+        s: 15,
         atkMax: 0.22,
         lunge: 3,
         tilt: 0.2,
@@ -2780,6 +3603,42 @@
         fallback: "#a855f7",
       };
     }
+    if (u.type === "witch") {
+      return {
+        img: pickWalkImage(SPRITES.witchWalk, wf),
+        s: 24,
+        atkMax: 0.22,
+        lunge: 3,
+        tilt: 0.2,
+        slashW: 1.2,
+        arcR: 10,
+        fallback: "#166534",
+      };
+    }
+    if (u.type === "musketeer") {
+      return {
+        img: pickWalkImage(SPRITES.musketeerWalk, wf),
+        s: 27,
+        atkMax: 0.24,
+        lunge: 3,
+        tilt: 0.22,
+        slashW: 1.2,
+        arcR: 12,
+        fallback: "#2563eb",
+      };
+    }
+    if (u.type === "goblin") {
+      return {
+        img: pickWalkImage(SPRITES.spearGoblinWalk, wf),
+        s: 14,
+        atkMax: 0.18,
+        lunge: 5,
+        tilt: 0.42,
+        slashW: 1.5,
+        arcR: 12,
+        fallback: "#16a34a",
+      };
+    }
     return {
       img: pickWalkImage(SPRITES.skelWalk, wf),
       s: DRAW_PX_SKEL,
@@ -2798,12 +3657,38 @@
       ctx.globalAlpha = 0.25;
     }
 
+    if (u.hp > 0 && u.type === "mega_goblin_army" && state) {
+      ctx.save();
+      const active = foeInGoblinHutRange(u, state);
+      const pulse = 0.55 + 0.08 * Math.sin((state.time || 0) * (active ? 5 : 2.2));
+      ctx.globalAlpha = active ? 0.22 * pulse : 0.12 * pulse;
+      ctx.fillStyle = active ? "rgba(250,204,21,0.35)" : "rgba(148,163,184,0.25)";
+      ctx.beginPath();
+      ctx.arc(u.x, u.y, HUT_TRIGGER_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = active ? 0.55 + 0.15 * pulse : 0.32;
+      ctx.strokeStyle = active ? "rgba(250,204,21,0.85)" : "rgba(148,163,184,0.65)";
+      ctx.lineWidth = active ? 2.2 : 1.5;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath();
+      ctx.arc(u.x, u.y, HUT_TRIGGER_RADIUS, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     const atkK = vis.atkMax > 0 ? clamp(u.attackT / vis.atkMax, 0, 1) : 0;
     const swing = atkK > 0 ? Math.sin((1 - atkK) * Math.PI) : 0;
     const lunge = swing * vis.lunge;
-    const ang = Math.atan2(u.faceY, u.faceX);
-    let lx = u.faceX * lunge;
-    let ly = u.faceY * lunge;
+    let faceX = u.faceX;
+    let faceY = u.faceY;
+    if (u.type === "mega_knight" && Math.abs(faceX) < 1e-4 && Math.abs(faceY) < 1e-4) {
+      faceX = 0;
+      faceY = u.side === "player" ? -1 : 1;
+    }
+    const ang = Math.atan2(faceY, faceX);
+    let lx = faceX * lunge;
+    let ly = faceY * lunge;
     const tilt = swing * (u.side === "player" ? -1 : 1) * vis.tilt;
     let drawY = u.y;
     if (u.type === "mega_knight" && u.mkJumpPhase === 1 && u.mkWindupT > 0) {
@@ -2854,29 +3739,56 @@
       ctx.arc(0, 0, u.radius, 0, Math.PI * 2);
       ctx.fill();
     }
+    if (u.type === "mega_goblin_army") {
+      const hx = 0;
+      const hy = -vis.s * 0.4;
+      ctx.fillStyle = "#78350f";
+      ctx.strokeStyle = "#451a03";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(hx, hy - 10);
+      ctx.lineTo(hx + 11, hy + 1);
+      ctx.lineTo(hx - 11, hy + 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      const hw = 20;
+      const hh = 12;
+      ctx.fillStyle = "#92400e";
+      ctx.fillRect(hx - hw / 2, hy + 1, hw, hh);
+      ctx.strokeRect(hx - hw / 2, hy + 1, hw, hh);
+      ctx.fillStyle = "#1c1917";
+      ctx.fillRect(hx - 3, hy + 4, 6, 7);
+      ctx.fillStyle = "rgba(254,243,199,0.45)";
+      ctx.fillRect(hx - 8, hy + 2, 4, 3);
+    }
     ctx.imageSmoothingEnabled = smooth;
     ctx.restore();
 
     if (u.hp > 0 && atkK > 0) {
       ctx.save();
-      ctx.translate(u.x, u.y);
+      const mkReach = u.type === "mega_knight" ? 22 : 0;
+      ctx.translate(u.x + faceX * mkReach, drawY + faceY * mkReach);
       ctx.rotate(ang);
       ctx.strokeStyle =
         u.type === "mini_pekka"
           ? "rgba(147,197,253,0.95)"
           : u.type === "mega_knight"
             ? "rgba(251,191,36,0.95)"
-            : "rgba(255,255,255,0.9)";
+            : u.type === "chud" || u.type === "mega_goblin_army"
+              ? "rgba(134,239,172,0.95)"
+              : "rgba(255,255,255,0.9)";
       ctx.lineWidth = vis.slashW;
       ctx.lineCap = "round";
       const sweep = (1 - atkK) * 1.1;
+      const arcR = u.type === "mega_knight" ? vis.arcR * 1.15 : vis.arcR;
       ctx.beginPath();
-      ctx.arc(0, 0, vis.arcR, -0.35, -0.35 + sweep);
+      ctx.arc(0, 0, arcR, -0.2, -0.2 + sweep);
       ctx.stroke();
       ctx.strokeStyle = "rgba(251,191,36,0.55)";
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(0, 0, vis.arcR + 3, -0.45, -0.45 + sweep * 0.9);
+      ctx.arc(0, 0, arcR + 3, -0.35, -0.35 + sweep * 0.9);
       ctx.stroke();
       ctx.restore();
     }
@@ -2892,11 +3804,21 @@
             ? 30
             : u.type === "mega_knight"
               ? 38
-            : u.type === "archer" || u.type === "spear_goblin"
-              ? 16
+            : u.type === "chud" || u.type === "mega_goblin_army"
+              ? 40
+            : u.type === "archer"
+              ? 19
+              : u.type === "goblin"
+                ? 22
+              : u.type === "spear_goblin"
+                ? 18
               : u.type === "wizard"
+              ? 28
+              : u.type === "witch"
                 ? 28
-                : 18;
+                : u.type === "musketeer"
+                  ? 32
+                  : 18;
       const by = u.y + u.radius + 7;
       ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(u.x - bw / 2, by, bw, 4);
@@ -2961,6 +3883,33 @@
         ctx.fillStyle = "#fae8ff";
         ctx.beginPath();
         ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === "witch") {
+        ctx.shadowColor = "rgba(22,163,74,0.9)";
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = "#4ade80";
+        ctx.strokeStyle = "#14532d";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#dcfce7";
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === "musket") {
+        ctx.fillStyle = "#cbd5e1";
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 1;
+        ctx.fillRect(-r * 2.8, -r * 0.45, r * 5.2, r * 0.9);
+        ctx.strokeRect(-r * 2.8, -r * 0.45, r * 5.2, r * 0.9);
+        ctx.fillStyle = "#78350f";
+        ctx.fillRect(-r * 3.1, -r * 0.35, r * 0.55, r * 0.7);
+        ctx.fillStyle = "#facc15";
+        ctx.beginPath();
+        ctx.arc(r * 2.35, 0, r * 0.35, 0, Math.PI * 2);
         ctx.fill();
       } else if (kind === "fireball_spell") {
         ctx.shadowColor = "rgba(251,146,60,0.95)";
@@ -3077,19 +4026,29 @@
       const pulse = rad * (0.62 + 0.38 * (1 - t));
       const kind = f.kind || "wizard";
       const baseStroke =
-        kind === "mega_jump" ? "#f59e0b" : kind === "mega_ground" ? "#eab308" : "#9333ea";
+        kind === "mega_jump"
+          ? "#f59e0b"
+          : kind === "mega_ground"
+            ? "#eab308"
+            : kind === "witch"
+              ? "#15803d"
+              : "#9333ea";
       const spokesStroke =
         kind === "mega_jump"
           ? "rgba(253,224,71,0.94)"
           : kind === "mega_ground"
             ? "rgba(254,240,138,0.9)"
-            : "rgba(216,180,254,0.92)";
+            : kind === "witch"
+              ? "rgba(187,247,208,0.92)"
+              : "rgba(216,180,254,0.92)";
       const fillCol =
         kind === "mega_jump"
           ? "rgba(245,158,11,0.22)"
           : kind === "mega_ground"
             ? "rgba(234,179,8,0.2)"
-            : "rgba(168,85,247,0.2)";
+            : kind === "witch"
+              ? "rgba(34,197,94,0.2)"
+              : "rgba(168,85,247,0.2)";
       ctx.save();
       ctx.globalAlpha = 0.3 + 0.4 * t;
       ctx.strokeStyle = baseStroke;
@@ -3234,6 +4193,7 @@
     for (const b of BRIDGES) {
       drawBridge(ctx, b.x, b.y);
     }
+    drawDeployZoneOverlay(ctx, state);
     for (const t of state.towers) {
       drawTower(ctx, t);
     }
@@ -3261,8 +4221,10 @@
 
     ctx.fillStyle = "rgba(226,232,240,0.5)";
     ctx.font = "600 11px system-ui";
-    ctx.fillText("Enemy", 14, 42);
-    ctx.fillText("You", 14, H - 14);
+    const swap =
+      state.matchMode === "training" && state.testing && state.testing.playAsEnemy === true;
+    ctx.fillText(swap ? "You (top)" : "Enemy", 14, 42);
+    ctx.fillText(swap ? "AI (bottom)" : "You", 14, H - 14);
   }
 
   /** @type {string} */
@@ -3283,17 +4245,18 @@
     const deckLine =
       `<strong>Deck</strong>: 8 <strong>unique</strong> cards — 4 in hand, 4 in queue (no duplicates in the rotation). ` +
       `<strong>Goblin Hut</strong> (${GOBLIN_HUT_COST}): HP decays over <strong>~${GOBLIN_HUT_LIFETIME_SEC}s</strong> like a timed building; dashed <strong>${HUT_TRIGGER_RADIUS}px</strong> ring; with a foe inside, one Spear Goblin every <strong>${HUT_SPAWN_INTERVAL}s</strong> (cap ${MAX_SPEAR_PER_HUT}). ` +
+      `<strong>Mega Goblin Army</strong> (${MEGA_GOBLIN_ARMY_COST}): <strong>Chud</strong> + hut head; dashed <strong>${HUT_TRIGGER_RADIUS}px</strong> ring follows him — with a foe inside, one Spear Goblin / <strong>${HUT_SPAWN_INTERVAL}s</strong> (cap ${MAX_SPEAR_PER_HUT} live). On death, <strong>5</strong> melee goblins. ` +
       `<strong>Spear Goblins</strong> (${SPEAR_GOBLINS_COST}): spawns <strong>3</strong> ranged spear goblins. ` +
       `<strong>Arrows</strong> (${ARROWS_COST}) / <strong>Fireball</strong> (${FIREBALL_COST}) / <strong>Zap</strong> (${ZAP_COST}): area damage, cast <strong>anywhere</strong>.<br/>`;
     const atkLine =
       `<strong>Attack speed</strong> (time between hits · hits/sec): ` +
       `Mini <strong>${ATTACK_INTERVAL_MINI_PEKKA}s</strong> (${aps(ATTACK_INTERVAL_MINI_PEKKA)}/s) · ` +
       `Knight <strong>${ATTACK_INTERVAL_KNIGHT}s</strong> (${aps(ATTACK_INTERVAL_KNIGHT)}/s) · ` +
-      `Skeletons <strong>${ATTACK_INTERVAL_SKELETON}s</strong> (${aps(ATTACK_INTERVAL_SKELETON)}/s) · ` +
-      `Skarmy <strong>${ATTACK_INTERVAL_SKARMY}s</strong> (${aps(ATTACK_INTERVAL_SKARMY)}/s) · ` +
+      `Skeletons &amp; Skarmy <strong>${ATTACK_INTERVAL_SKELETON}s</strong> (${aps(ATTACK_INTERVAL_SKELETON)}/s) · ` +
       `Archers <strong>${ATTACK_INTERVAL_ARCHER}s</strong> (${aps(ATTACK_INTERVAL_ARCHER)}/s) · ` +
       `Spear Goblin <strong>${SPEAR_GOBLIN_INTERVAL}s</strong> (${aps(SPEAR_GOBLIN_INTERVAL)}/s) · ` +
       `Wizard <strong>${ATTACK_INTERVAL_WIZARD}s</strong> (${aps(ATTACK_INTERVAL_WIZARD)}/s, splash) · ` +
+      `Witch <strong>${ATTACK_INTERVAL_WITCH}s</strong> (${aps(ATTACK_INTERVAL_WITCH)}/s, splash + skeletons) · ` +
       `Mega Knight <strong>${ATTACK_INTERVAL_MEGA_KNIGHT}s</strong> (${aps(ATTACK_INTERVAL_MEGA_KNIGHT)}/s, jump slam).`;
     return (
       `${modeLine}` +
@@ -3357,8 +4320,12 @@
     } else if (selCard === "goblin_hut") {
       els.hint.textContent =
         `Place on your grass. HP slowly drains (~${GOBLIN_HUT_LIFETIME_SEC}s lifetime). Ring = spawn range: one Spear Goblin / 2s while an enemy is inside.`;
+    } else if (selCard === "mega_goblin_army") {
+      els.hint.textContent =
+        `Chud that spawns Spear Goblins like a hut: ring moves with him; enemy inside = one spear / ${HUT_SPAWN_INTERVAL}s (max ${MAX_SPEAR_PER_HUT} alive). Death: 5 melee goblins.`;
     } else if (selCard) {
-      els.hint.textContent = "Tap your side of the grass to deploy.";
+      els.hint.textContent =
+        "Green tint shows where you can deploy. Destroy an enemy princess tower to place further up that lane (like Clash).";
     } else {
       els.hint.textContent = "Pick one of your 4 cards — next in line is shown under “Next”.";
     }
@@ -3460,6 +4427,7 @@
     const testingPanel = document.getElementById("testing-panel");
     const testingEnemySpawns = document.getElementById("testing-enemy-spawns");
     const testingInfiniteElixir = document.getElementById("testing-infinite-elixir");
+    const testingPlayAsEnemy = document.getElementById("testing-play-as-enemy");
     const testingKillAll = document.getElementById("testing-kill-all");
 
     function syncTestingUi() {
@@ -3472,6 +4440,7 @@
       testingPanel.hidden = false;
       testingEnemySpawns.checked = st.testing.enemySpawns !== false;
       testingInfiniteElixir.checked = !!st.testing.infiniteElixir;
+      if (testingPlayAsEnemy) testingPlayAsEnemy.checked = !!st.testing.playAsEnemy;
     }
 
     if (testingPanel && testingEnemySpawns && testingInfiniteElixir && testingKillAll) {
@@ -3483,6 +4452,12 @@
         const st = stateRef.current;
         if (st && st.testing) st.testing.infiniteElixir = testingInfiniteElixir.checked;
       });
+      if (testingPlayAsEnemy) {
+        testingPlayAsEnemy.addEventListener("change", () => {
+          const st = stateRef.current;
+          if (st && st.testing) st.testing.playAsEnemy = testingPlayAsEnemy.checked;
+        });
+      }
       testingKillAll.addEventListener("click", () => {
         const st = stateRef.current;
         if (!st || st.matchMode !== "training" || st.over) return;
@@ -3499,6 +4474,11 @@
         const prevMode = stateRef.current.matchMode;
         stateRef.current = createInitialState();
         stateRef.current.matchMode = prevMode;
+        if (prevMode === "training" && stateRef.current.testing) {
+          stateRef.current.testing.enemySpawns = testingEnemySpawns.checked;
+          stateRef.current.testing.infiniteElixir = testingInfiniteElixir.checked;
+          if (testingPlayAsEnemy) stateRef.current.testing.playAsEnemy = testingPlayAsEnemy.checked;
+        }
         syncTestingUi();
       }
     });
@@ -3544,7 +4524,7 @@
       "";
     if (mode === "battle" && mid && gid) {
       setupBattleNet(mid, gid);
-      hudModeLine = `<strong>Battle (PvP)</strong> · match <strong>${mid.slice(0, 8)}…</strong> — your deployments sync; towers &amp; elixir are still local until we sync those too.`;
+      hudModeLine = `<strong>Battle (PvP)</strong> · match <strong>${mid.slice(0, 8)}…</strong> — deployments stream live; full arena (troops, towers, elixir, projectiles) realigns every <strong>${BATTLE_ARENA_SYNC_SEC}s</strong> from the host client.`;
     } else if (mode === "battle" && mid) {
       hudModeLine = `<strong>Battle</strong> · match <strong>${mid.slice(0, 8)}…</strong> — refresh and re-queue if troops don’t sync (missing guest id).`;
     } else if (mode === "battle") {
@@ -3558,6 +4538,7 @@
     st.matchMode = mode;
     st.testing.enemySpawns = true;
     st.testing.infiniteElixir = false;
+    st.testing.playAsEnemy = false;
     stateRef.current = st;
     gameRunning = true;
     lastFrameT = performance.now();
@@ -3597,7 +4578,7 @@
     getCardPreview: (cardId) => cardUiInfo(String(cardId)),
   };
 
-  const NIGHT_ARENA_VERSION = 47;
+  const NIGHT_ARENA_VERSION = 70;
   window.NIGHT_ARENA_VERSION = NIGHT_ARENA_VERSION;
   function paintVersionBadge() {
     document.querySelectorAll("[data-na-version]").forEach((el) => {
