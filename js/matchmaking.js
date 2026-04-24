@@ -37,13 +37,15 @@
     return firebase.firestore();
   }
 
+  /**
+   * One anonymous id per page load (per JS realm). Not stored in sessionStorage:
+   * duplicated tabs copy sessionStorage, which made two "bot" or test windows
+   * share one guestId and break PvP (same player twice, moves/sync filtered wrong).
+   */
+  let arenaGuestInstance = "";
   function guestId() {
-    let g = sessionStorage.getItem("na_guest");
-    if (!g) {
-      g = crypto.randomUUID();
-      sessionStorage.setItem("na_guest", g);
-    }
-    return g;
+    if (!arenaGuestInstance) arenaGuestInstance = crypto.randomUUID();
+    return arenaGuestInstance;
   }
 
   /**
@@ -135,6 +137,7 @@
           if (s0.data()?.state !== "waiting" || s1.data()?.state !== "waiting") return;
           const matchRef = db.collection("battle_matches").doc();
           tx.set(matchRef, {
+            // Order is stable: players[0] = Player 1, players[1] = Player 2.
             players: [g0, g1],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           });
