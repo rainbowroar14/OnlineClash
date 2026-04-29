@@ -96,6 +96,9 @@
           <label class="testing-label"
             ><input type="checkbox" id="testing-play-as-enemy" /> Play as top team (spawn on enemy side)</label
           >
+          <label class="testing-label"
+            ><input type="checkbox" id="testing-combat-debug" /> Combat debug (ranges, projectile hit radius, HP)</label
+          >
           <button type="button" class="btn btn-small" id="testing-kill-all">Kill all units</button>
         </div>
         <div class="emote-bar" id="emote-bar" style="display: none" aria-label="Quick emotes">
@@ -125,7 +128,7 @@
         <div class="hand" id="hand">
           <div class="elixir-block">
             <div class="elixir-label">Elixir</div>
-            <div class="elixir-bar" role="progressbar" aria-valuemin="0" aria-valuemax="10">
+            <div class="elixir-bar" role="progressbar" aria-valuemin="0" aria-valuemax="30">
               <div class="elixir-fill" id="elixir-fill"></div>
             </div>
             <div class="elixir-num" id="elixir-num">0.0</div>
@@ -170,7 +173,7 @@
     </div>
 
     <!-- ?v= bumps cache after deploy; open /js/menu.js in browser and search FIREBASE_WEB_CONFIG to verify live file -->
-    <script src="js/game.js?v=100" defer></script>
+    <script src="js/game.js?v=117" defer></script>
     <script src="js/matchmaking.js?v=56" defer></script>
     <script src="js/menu.js?v=53" defer></script>
   </body>

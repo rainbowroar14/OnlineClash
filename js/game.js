@@ -27,13 +27,25 @@
   const MINI_PEKKA_COST = 4;
   const KNIGHT_COST = 3;
   /** Meme melee: fast, huge sprite, very high hit-rate DPS. */
-  const TUNG_SAHUR_COST = 5;
-  const TUNG_SAHUR_HP = 400;
+  const TUNG_SAHUR_COST = 10;
+  const TUNG_SAHUR_HP = 200;
   const TUNG_SAHUR_DMG = 5;
   const SPEED_TUNG_SAHUR = 75;
   const ATTACK_INTERVAL_TUNG_SAHUR = 1 / 50;
   const TUNG_SAHUR_DEATH_BLAST_RADIUS = 122;
   const TUNG_SAHUR_DEATH_BLAST_DMG = 750;
+  /** Heavenly Tung: death → pause → rally → charge → red lasers (3s) → nuke + 5 Tung Sahur (or early if no targets). */
+  const HEAVENLY_TUNG_COST = 30;
+  const HEAVENLY_TUNG_PAUSE_SEC = 1;
+  const HEAVENLY_TUNG_CHARGE_SEC = 3;
+  const HEAVENLY_TUNG_CHARGE_MAX_R = 92;
+  const HEAVENLY_TUNG_RALLY_MOVE_SPEED = 240;
+  const HEAVENLY_TUNG_FIRE_SEC = 3;
+  const HEAVENLY_TUNG_LASER_HZ = 12;
+  const HEAVENLY_TUNG_LASER_DMG = 42;
+  const HEAVENLY_TUNG_NUKE_RADIUS = 268;
+  const HEAVENLY_TUNG_NUKE_DMG = 2200;
+  const HEAVENLY_TUNG_NUKE_FX_SEC = 2.35;
   /** Spawns 3; each becomes an untargetable ghost at 0 HP until all 3 are ghosts, then the squad is removed. */
   const BIR_BIR_PATAPINS_COST = 7;
   const BIR_PATAPIN_HP = 120;
@@ -95,6 +107,21 @@
   const TOMBSTONE_SKELS_EACH_SPAWN = 2;
   const TOMBSTONE_SKELS_ON_DEATH = 4;
 
+  /** Clash-style Cannon: timed building, shoots single-target cannonballs at ground foes. */
+  const CANNON_COST = 3;
+  const CANNON_HP = 500;
+  const CANNON_LIFETIME_SEC = 40;
+  const CANNON_DECAY_PER_SEC = CANNON_HP / CANNON_LIFETIME_SEC;
+  const CANNON_RANGE = 105;
+  const CANNON_SHOT_DMG = 52;
+  const CANNON_FIRE_INTERVAL = 0.88;
+
+  /** Garrison tower: 150 HP decays over 60s; one friendly troop deployed on it hides inside until the tower dies. */
+  const GARRISON_TOWER_COST = 4;
+  const GARRISON_TOWER_HP = 150;
+  const GARRISON_TOWER_LIFETIME_SEC = 60;
+  const GARRISON_TOWER_DECAY_PER_SEC = GARRISON_TOWER_HP / GARRISON_TOWER_LIFETIME_SEC;
+
   /** Beyond melee “reach”, hard lock breaks (target kited away). */
   const LOCK_LEASH_EXTRA = 12;
 
@@ -103,6 +130,7 @@
     "mini_pekka",
     "knight",
     "skeleton",
+    "bomber",
     "goblins",
     "archers",
     "spear_goblins",
@@ -114,6 +142,8 @@
     "fireball",
     "freeze",
     "goblin_hut",
+    "cannon",
+    "garrison_tower",
     "mega_goblin_army",
     "zap",
     "wizard",
@@ -122,6 +152,7 @@
     "mega_knight",
     "musketeer",
     "tung_tung_tung_sahur",
+    "heavenly_tung",
     "bir_bir_patapins",
     "witch",
   ];
@@ -155,7 +186,7 @@
   const WIZARD_SPLASH_FRACTION = 0.58;
 
   const ELECTRO_WIZARD_COST = 4;
-  const ELECTRO_WIZARD_HP = Math.max(104, Math.floor(WIZARD_HP * 0.58 * 2));
+  const ELECTRO_WIZARD_HP = 150;
   const ELECTRO_WIZARD_DMG = Math.max(24, Math.floor((WIZARD_DMG * 0.46) / 2));
   const ELECTRO_WIZARD_RANGE = WIZARD_RANGE;
   const ELECTRO_WIZARD_ATTACK_SEC = 1.5;
@@ -183,6 +214,14 @@
   const SKELETON_HP = 1;
   const SKELETON_DMG = 30;
   const SPEED_SKELETON = 25;
+  /** Ground splash bomber: skeleton speed, arcing bomb deals flat splash to all in radius. */
+  const BOMBER_COST = 2;
+  const BOMBER_HP = 150;
+  const BOMBER_SPLASH_DMG = 150;
+  const BOMBER_SPLASH_RADIUS = 30;
+  const SPEED_BOMBER = SPEED_SKELETON;
+  const BOMBER_RANGE = 90;
+  const ATTACK_INTERVAL_BOMBER = 1.85;
 
   const ARCHER_HP = 35;
   /** Melee goblin (Goblins / Goblin Gang): same cadence as skeletons, 1.3× skeleton slash. */
@@ -194,7 +233,7 @@
   /** Tower-only melee goblin bruiser. */
   const CHUD_HP = 2000;
   const CHUD_DMG = 150;
-  const SPEED_CHUD = 10;
+  const SPEED_CHUD = 13;
   const ATTACK_INTERVAL_CHUD = 1.55;
   const CHUD_MELEE_RANGE = 28;
   const CHUD_RADIUS = 14;
@@ -238,7 +277,7 @@
   /** Native art: 16×16 heavy troops, 12×12 light troops; scaled when drawn. */
   const DRAW_PX_UNIT = 32;
   const DRAW_PX_SKEL = 16;
-  const MAX_ELIXIR = 15;
+  const MAX_ELIXIR = 30;
   const ELIXIR_PER_SEC = 1 / 2.75;
   const DEPLOY_DELAY_SEC = 0.4;
   /** PvP regulation length (seconds); then tiebreak or winner by crowns. */
@@ -279,6 +318,7 @@
     miniWalk: /** @type {HTMLImageElement[]} */ ([]),
     knightWalk: /** @type {HTMLImageElement[]} */ ([]),
     skelWalk: /** @type {HTMLImageElement[]} */ ([]),
+    bomberWalk: /** @type {HTMLImageElement[]} */ ([]),
     archerWalk: /** @type {HTMLImageElement[]} */ ([]),
     spearGoblinWalk: /** @type {HTMLImageElement[]} */ ([]),
     wizardWalk: /** @type {HTMLImageElement[]} */ ([]),
@@ -288,6 +328,7 @@
     megaKnightWalk: /** @type {HTMLImageElement[]} */ ([]),
     chudWalk: /** @type {HTMLImageElement[]} */ ([]),
     tungSahur: new Image(),
+    heavenlyTung: new Image(),
     birPatapin: new Image(),
     tungBoom: new Image(),
     towerPrincess: new Image(),
@@ -305,6 +346,7 @@
   loadWalkFrames("assets", "mini-pekka", SPRITES.miniWalk);
   loadWalkFrames("assets", "knight", SPRITES.knightWalk);
   loadWalkFrames("assets", "skeleton", SPRITES.skelWalk);
+  loadWalkFrames("assets", "bomber", SPRITES.bomberWalk);
   loadWalkFrames("assets", "archer", SPRITES.archerWalk);
   loadWalkFrames("assets", "spear-goblin", SPRITES.spearGoblinWalk);
   loadWalkFrames("assets", "wizard", SPRITES.wizardWalk);
@@ -314,6 +356,7 @@
   loadWalkFrames("assets", "mega-knight", SPRITES.megaKnightWalk);
   loadWalkFrames("assets", "chud", SPRITES.chudWalk);
   SPRITES.tungSahur.src = "assets/tung-tung-tung-sahur.png";
+  SPRITES.heavenlyTung.src = "assets/heavenly-tung.png";
   SPRITES.birPatapin.src = "assets/bir-bir-patapins-v2.png";
   SPRITES.tungBoom.src = "assets/tung-sahur-explosion.png";
   SPRITES.towerPrincess.src = "assets/tower-princess.svg";
@@ -465,7 +508,10 @@
     let pick = null;
 
     for (const u of state.troops) {
-      if (u === troop || u.hp <= 0 || u.side === troop.side) continue;
+      if (u === troop || u.side === troop.side) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (u.hp <= 0) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(troop.x, troop.y, u.x, u.y);
       if (d < bestD) {
         bestD = d;
@@ -508,9 +554,19 @@
     return !!(t && t.type === "bir_patapin" && t.patapinGhost === true);
   }
 
+  function heavenlyTungRageActive(t) {
+    return !!(t && t.type === "heavenly_tung" && t.heavenlyRageActive === true);
+  }
+
+  function troopInsideGarrisonAlive(troop, state) {
+    if (!troop || !troop.garrisonBuildingId || !state) return false;
+    const bd = (state.buildings || []).find((b) => b.id === troop.garrisonBuildingId);
+    return !!(bd && bd.hp > 0 && bd.kind === "garrison_tower");
+  }
+
   /** Walking, melee, and facing (patapin ghosts keep fighting at 0 HP until the trio wipes). */
   function troopActsOnBattlefield(t) {
-    return t && (t.hp > 0 || patapinGhostActive(t));
+    return t && (t.hp > 0 || patapinGhostActive(t) || heavenlyTungRageActive(t));
   }
 
   function aggroTargetInMeleeEngageRange(troop, ct) {
@@ -548,7 +604,8 @@
       t === "wizard" ||
       t === "electro_wizard" ||
       t === "witch" ||
-      t === "musketeer"
+      t === "musketeer" ||
+      t === "bomber"
     );
   }
 
@@ -639,7 +696,11 @@
     }
     if (troop.aggroKind === "troop") {
       const u = state.troops.find((x) => x.id === troop.aggroId);
-      if (!u || u.hp <= 0 || u.side === troop.side) {
+      if (!u || u.side === troop.side || heavenlyTungRageActive(u) || u.hp <= 0) {
+        clearTroopAggro(troop);
+        return null;
+      }
+      if (troopInsideGarrisonAlive(u, state)) {
         clearTroopAggro(troop);
         return null;
       }
@@ -820,7 +881,7 @@
     if (!ct) return;
     let tx;
     let ty;
-    if (ct.kind === "troop" && ct.troop.hp > 0) {
+    if (ct.kind === "troop" && ct.troop.hp > 0 && !heavenlyTungRageActive(ct.troop)) {
       tx = ct.troop.x;
       ty = ct.troop.y;
     } else if (ct.kind === "tower" && ct.tower.hp > 0) {
@@ -865,9 +926,11 @@
       for (let i = 0; i < troops.length; i++) {
         const a = troops[i];
         if (!troopActsOnBattlefield(a)) continue;
+        if (heavenlyTungRageActive(a)) continue;
         for (let j = i + 1; j < troops.length; j++) {
           const b = troops[j];
           if (!troopActsOnBattlefield(b)) continue;
+          if (heavenlyTungRageActive(b)) continue;
           const minD = a.radius + b.radius + padding;
           const d = dist(a.x, a.y, b.x, b.y);
           if (d >= minD || d < 1e-4) continue;
@@ -948,9 +1011,16 @@
     if (b.hp <= 0 || amount <= 0) return;
     b.hp -= amount;
     if (b.hp < 0) b.hp = 0;
-    if (b.hp <= 0 && b.kind === "tombstone" && !b.tombDeathSpawned) {
-      b.tombDeathSpawned = true;
-      spawnSkeletonsFromTombstoneSite(state, b, TOMBSTONE_SKELS_ON_DEATH);
+    if (b.hp <= 0) {
+      if (b.kind === "garrison_tower" && b.garrisonTroopId) {
+        const gt = state.troops.find((t) => t.id === b.garrisonTroopId);
+        if (gt) releaseTroopFromGarrison(state, gt, b);
+        b.garrisonTroopId = null;
+      }
+      if (b.kind === "tombstone" && !b.tombDeathSpawned) {
+        b.tombDeathSpawned = true;
+        spawnSkeletonsFromTombstoneSite(state, b, TOMBSTONE_SKELS_ON_DEATH);
+      }
     }
   }
 
@@ -991,7 +1061,11 @@
   }
 
   function applyTroopDamage(troop, amount) {
-    if (!troop || amount <= 0 || troop.hp <= 0) return;
+    if (!troop || amount <= 0) return;
+    if (heavenlyTungRageActive(troop)) return;
+    const stG = stateRef.current;
+    if (stG && troopInsideGarrisonAlive(troop, stG)) return;
+    if (troop.hp <= 0) return;
     if (patapinGhostActive(troop)) return;
     const sh = troop.shieldHp;
     if (sh != null && sh > 0) {
@@ -1005,6 +1079,19 @@
     }
     troop.hp -= amount;
     if (troop.hp < 0) troop.hp = 0;
+    if (troop.type === "heavenly_tung" && troop.hp <= 0 && !troop.heavenlyRageActive) {
+      troop.heavenlyRageActive = true;
+      const st = stateRef.current;
+      troop.hp = 0;
+      clearTroopAggro(troop);
+      troop.heavenlyPhase = "pause";
+      troop.heavenlyPhaseStart = st ? st.time : 0;
+      const rp = st ? heavenlyKingRallyPoint(st, troop.side) : { x: LANE_SPLIT_X, y: H * 0.5 };
+      troop.heavenlyRallyX = rp.x;
+      troop.heavenlyRallyY = rp.y;
+      troop.heavenlyLaserAcc = 0;
+      return;
+    }
     if (troop.type === "tung_tung_tung_sahur" && troop.hp <= 0) {
       const st = stateRef.current;
       if (st) triggerTungSahurDeathBlast(st, troop);
@@ -1014,6 +1101,183 @@
       troop.patapinGhost = true;
       const st = stateRef.current;
       if (st && troop.patapinSquad) maybeFinalizePatapinSquad(st, troop.patapinSquad);
+    }
+  }
+
+  /** Stand just in front of your king (toward the river), centered between lanes. */
+  function heavenlyKingRallyPoint(state, side) {
+    const kid = side === "player" ? "pK" : "eK";
+    const k = state.towers.find((t) => t.id === kid);
+    if (!k) return { x: LANE_SPLIT_X, y: H * 0.5 };
+    const dy = side === "player" ? -42 : 42;
+    return {
+      x: k.x,
+      y: clamp(k.y + dy, 36, H - 36),
+    };
+  }
+
+  /**
+   * Up to `limit` nearest enemy targets for Heavenly laser visuals / damage.
+   * @returns {{ kind: "troop"; troop: object; x: number; y: number; d: number } | { kind: "building"; b: object; x: number; y: number; d: number } | { kind: "tower"; tw: object; x: number; y: number; d: number }[]} */
+  function pickHeavenlyLaserTargets(state, src, limit) {
+    const side = src.side;
+    /** @type {{ kind: "troop"; troop: object; x: number; y: number; d: number } | { kind: "building"; b: object; x: number; y: number; d: number } | { kind: "tower"; tw: object; x: number; y: number; d: number }[]} */
+    const arr = [];
+    for (const u of state.troops) {
+      if (u === src || u.side === side) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      if (u.hp <= 0 && !patapinGhostActive(u)) continue;
+      arr.push({ kind: "troop", troop: u, x: u.x, y: u.y, d: dist(src.x, src.y, u.x, u.y) });
+    }
+    for (const bd of state.buildings || []) {
+      if (bd.hp <= 0 || bd.side === side) continue;
+      arr.push({ kind: "building", b: bd, x: bd.x, y: bd.y, d: dist(src.x, src.y, bd.x, bd.y) });
+    }
+    for (const tw of state.towers) {
+      if (tw.hp <= 0 || tw.side === side) continue;
+      if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+      arr.push({ kind: "tower", tw, x: tw.x, y: tw.y, d: dist(src.x, src.y, tw.x, tw.y) });
+    }
+    arr.sort((a, b) => a.d - b.d);
+    return arr.slice(0, limit);
+  }
+
+  /** Same eligibility as laser targets (incl. dormant king = not a target). */
+  function heavenlyHasAnyEnemyTarget(state, side) {
+    if (!state) return false;
+    for (const u of state.troops) {
+      if (u.side === side) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      if (u.hp <= 0 && !patapinGhostActive(u)) continue;
+      return true;
+    }
+    for (const bd of state.buildings || []) {
+      if (bd.hp <= 0 || bd.side === side) continue;
+      return true;
+    }
+    for (const tw of state.towers) {
+      if (tw.hp <= 0 || tw.side === side) continue;
+      if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+      return true;
+    }
+    return false;
+  }
+
+  function triggerHeavenlyTungVictoryFinale(state, troop) {
+    if (!state || !troop || troop.type !== "heavenly_tung") return;
+    const cx = troop.x;
+    const cy = troop.y;
+    const side = troop.side;
+    applyFullAoEToFoes(state, cx, cy, side, HEAVENLY_TUNG_NUKE_RADIUS, HEAVENLY_TUNG_NUKE_DMG);
+    state.wizardSplashFx.push({
+      cx,
+      cy,
+      until: state.time + HEAVENLY_TUNG_NUKE_FX_SEC,
+      radius: HEAVENLY_TUNG_NUKE_RADIUS,
+      kind: "heavenly_nuke",
+    });
+    const faceY = side === "player" ? -1 : 1;
+    const offs = [
+      [0, 0],
+      [-16, 7],
+      [16, 7],
+      [-12, -10],
+      [12, -10],
+    ];
+    for (const [ox, oy] of offs) {
+      createTroop(
+        side,
+        "tung_tung_tung_sahur",
+        clamp(cx + ox, 14, W - 14),
+        clamp(cy + oy * faceY, 14, H - 14),
+        state,
+      );
+    }
+  }
+
+  function applyHeavenlyThreeLaserDamage(state, src) {
+    if (!state || !src || src.heavenlyPhase !== "fire") return;
+    for (const p of pickHeavenlyLaserTargets(state, src, 3)) {
+      if (p.kind === "troop") applyTroopDamage(p.troop, HEAVENLY_TUNG_LASER_DMG);
+      else if (p.kind === "building") applyBuildingDamage(state, p.b, HEAVENLY_TUNG_LASER_DMG);
+      else applyTowerDamage(state, p.tw, HEAVENLY_TUNG_LASER_DMG);
+    }
+  }
+
+  function updateHeavenlyTungRage(dt, state) {
+    for (let i = state.troops.length - 1; i >= 0; i--) {
+      const u = state.troops[i];
+      if (u.type !== "heavenly_tung" || !u.heavenlyRageActive) continue;
+      if (state.over) {
+        state.troops.splice(i, 1);
+        continue;
+      }
+      const t = state.time;
+      const ph = u.heavenlyPhase;
+      if (ph === "pause") {
+        if (t - u.heavenlyPhaseStart >= HEAVENLY_TUNG_PAUSE_SEC) {
+          u.heavenlyPhase = "move";
+          u.heavenlyPhaseStart = t;
+        }
+      } else if (ph === "move") {
+        const tx = u.heavenlyRallyX;
+        const ty = u.heavenlyRallyY;
+        const d = dist(u.x, u.y, tx, ty);
+        if (d < 7) {
+          u.x = tx;
+          u.y = ty;
+          u.heavenlyPhase = "charge";
+          u.heavenlyPhaseStart = t;
+        } else {
+          const sp = HEAVENLY_TUNG_RALLY_MOVE_SPEED * dt;
+          const n = norm(tx - u.x, ty - u.y);
+          const step = Math.min(sp, d);
+          u.x = clamp(u.x + n.x * step, 14, W - 14);
+          u.y = clamp(u.y + n.y * step, 14, H - 14);
+        }
+      } else if (ph === "charge") {
+        if (t - u.heavenlyPhaseStart >= HEAVENLY_TUNG_CHARGE_SEC) {
+          u.heavenlyPhase = "fire";
+          u.heavenlyPhaseStart = t;
+          u.heavenlyLaserAcc = 0;
+        }
+      } else if (ph === "fire") {
+        const T0 = u.heavenlyPhaseStart;
+        const fireEnd = T0 + HEAVENLY_TUNG_FIRE_SEC;
+        const t0 = t - dt;
+
+        if (!heavenlyHasAnyEnemyTarget(state, u.side)) {
+          triggerHeavenlyTungVictoryFinale(state, u);
+          state.troops.splice(i, 1);
+          continue;
+        }
+
+        const laserStart = Math.max(t0, T0);
+        const laserEnd = Math.min(t, fireEnd);
+        const laserDt = Math.max(0, laserEnd - laserStart);
+
+        u.heavenlyLaserAcc = (u.heavenlyLaserAcc || 0) + laserDt;
+        const step = 1 / HEAVENLY_TUNG_LASER_HZ;
+        let finaledEarly = false;
+        while (u.heavenlyLaserAcc >= step) {
+          u.heavenlyLaserAcc -= step;
+          applyHeavenlyThreeLaserDamage(state, u);
+          if (!heavenlyHasAnyEnemyTarget(state, u.side)) {
+            triggerHeavenlyTungVictoryFinale(state, u);
+            state.troops.splice(i, 1);
+            finaledEarly = true;
+            break;
+          }
+        }
+        if (finaledEarly) continue;
+        if (t >= fireEnd) {
+          triggerHeavenlyTungVictoryFinale(state, u);
+          state.troops.splice(i, 1);
+          continue;
+        }
+      }
     }
   }
 
@@ -1190,6 +1454,234 @@
     }
   }
 
+  function createCannonBuilding(side, x, y, state) {
+    state.buildings.push({
+      id: `b${++state.uid}`,
+      kind: "cannon",
+      side,
+      x,
+      y,
+      hp: CANNON_HP,
+      maxHp: CANNON_HP,
+      radius: 20,
+      fireAt: 0,
+      aggroKind: /** @type {null | "troop" | "building"} */ (null),
+      aggroId: /** @type {null | string} */ (null),
+      combatLocked: false,
+    });
+  }
+
+  function createGarrisonTowerBuilding(side, x, y, state) {
+    state.buildings.push({
+      id: `b${++state.uid}`,
+      kind: "garrison_tower",
+      side,
+      x,
+      y,
+      hp: GARRISON_TOWER_HP,
+      maxHp: GARRISON_TOWER_HP,
+      radius: 22,
+      garrisonTroopId: /** @type {null | string} */ (null),
+    });
+  }
+
+  function releaseTroopFromGarrison(state, troop, bd) {
+    delete troop.garrisonBuildingId;
+    if (bd.garrisonTroopId === troop.id) bd.garrisonTroopId = null;
+    troop.x = bd.x;
+    troop.y = bd.y;
+    troop.bridgeIx = pickBridgeIx(troop.x, troop.y);
+    ensureBridgeLaneOx(troop);
+    troop.path = "fight";
+    clearTroopAggro(troop);
+  }
+
+  function tryPlaceTroopInGarrisonTower(state, troop) {
+    if (!troop || troop.garrisonBuildingId) return false;
+    const cand = (state.buildings || []).filter(
+      (bd) =>
+        bd.kind === "garrison_tower" &&
+        bd.side === troop.side &&
+        bd.hp > 0 &&
+        !bd.garrisonTroopId &&
+        dist(troop.x, troop.y, bd.x, bd.y) <= bd.radius * 0.82,
+    );
+    if (!cand.length) return false;
+    cand.sort((a, b) => dist(troop.x, troop.y, a.x, a.y) - dist(troop.x, troop.y, b.x, b.y));
+    const bd = cand[0];
+    troop.garrisonBuildingId = bd.id;
+    troop.path = "garrison";
+    troop.x = bd.x;
+    troop.y = bd.y;
+    bd.garrisonTroopId = troop.id;
+    clearTroopAggro(troop);
+    return true;
+  }
+
+  function attachNewTroopsToGarrisonFrom(state, prevTroopLen) {
+    for (let i = prevTroopLen; i < state.troops.length; i++) {
+      tryPlaceTroopInGarrisonTower(state, state.troops[i]);
+    }
+  }
+
+  function updateCannonDecay(dt, state) {
+    const buildings = state.buildings;
+    if (!buildings || !buildings.length) return;
+    const amt = CANNON_DECAY_PER_SEC * dt;
+    for (const b of buildings) {
+      if (b.hp <= 0 || b.kind !== "cannon") continue;
+      applyBuildingDamage(state, b, amt);
+    }
+  }
+
+  function updateGarrisonTowerDecay(dt, state) {
+    const buildings = state.buildings;
+    if (!buildings || !buildings.length) return;
+    const amt = GARRISON_TOWER_DECAY_PER_SEC * dt;
+    for (const b of buildings) {
+      if (b.hp <= 0 || b.kind !== "garrison_tower") continue;
+      applyBuildingDamage(state, b, amt);
+    }
+  }
+
+  function clearCannonAggro(b) {
+    b.aggroKind = null;
+    b.aggroId = null;
+    b.combatLocked = false;
+  }
+
+  function tryResolveCannonAggro(b, state) {
+    if (!b.aggroKind || !b.aggroId) return null;
+    if (b.aggroKind === "troop") {
+      const u = state.troops.find((x) => x.id === b.aggroId);
+      if (!u || u.side === b.side || heavenlyTungRageActive(u) || u.hp <= 0) {
+        clearCannonAggro(b);
+        return null;
+      }
+      if (troopInsideGarrisonAlive(u, state)) {
+        clearCannonAggro(b);
+        return null;
+      }
+      return { kind: "troop", troop: u };
+    }
+    if (b.aggroKind === "building") {
+      const bd = (state.buildings || []).find((x) => x.id === b.aggroId);
+      if (!bd || bd.hp <= 0 || bd.side === b.side || bd === b) {
+        clearCannonAggro(b);
+        return null;
+      }
+      return { kind: "building", building: bd };
+    }
+    clearCannonAggro(b);
+    return null;
+  }
+
+  function setCannonAggroFromPick(b, pick) {
+    if (!pick) {
+      clearCannonAggro(b);
+      return;
+    }
+    if (pick.kind === "troop") {
+      b.aggroKind = "troop";
+      b.aggroId = pick.troop.id;
+    } else {
+      b.aggroKind = "building";
+      b.aggroId = pick.building.id;
+    }
+  }
+
+  function cannonTargetInEngageRange(b, ct, range) {
+    if (ct.kind === "troop") return dist(b.x, b.y, ct.troop.x, ct.troop.y) <= range;
+    return dist(b.x, b.y, ct.building.x, ct.building.y) <= range;
+  }
+
+  function nearestFoeForCannonAttack(b, state) {
+    const range = CANNON_RANGE;
+    let best = /** @type {{ kind: "troop"; troop: (typeof state.troops)[0] } | { kind: "building"; building: (typeof state.buildings)[0] } | null} */ (
+      null
+    );
+    let bestD = Infinity;
+    for (const u of state.troops) {
+      if (u.side === b.side) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (u.hp <= 0) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      const d = dist(b.x, b.y, u.x, u.y);
+      if (d <= range && d < bestD) {
+        bestD = d;
+        best = { kind: "troop", troop: u };
+      }
+    }
+    for (const bd of state.buildings || []) {
+      if (bd === b || bd.hp <= 0 || bd.side === b.side) continue;
+      const d = dist(b.x, b.y, bd.x, bd.y);
+      if (d <= range && d < bestD) {
+        bestD = d;
+        best = { kind: "building", building: bd };
+      }
+    }
+    return best;
+  }
+
+  function cannonBuildingShoot(state, b, now) {
+    if (b.kind !== "cannon" || b.hp <= 0 || state.over) return;
+    const range = CANNON_RANGE;
+    const cd = CANNON_FIRE_INTERVAL;
+    if (now < b.fireAt) return;
+
+    let ct = null;
+    if (b.combatLocked) {
+      const locked = tryResolveCannonAggro(b, state);
+      if (locked && cannonTargetInEngageRange(b, locked, range)) {
+        ct = locked;
+      } else {
+        clearCannonAggro(b);
+      }
+    }
+    if (!ct) ct = nearestFoeForCannonAttack(b, state);
+    if (!ct) {
+      clearCannonAggro(b);
+      return;
+    }
+    setCannonAggroFromPick(b, ct);
+    b.combatLocked = true;
+
+    let tx;
+    let ty;
+    /** @type {"troop" | "building"} */
+    let targetKind;
+    let targetId;
+    if (ct.kind === "troop") {
+      tx = ct.troop.x;
+      ty = ct.troop.y;
+      targetKind = "troop";
+      targetId = ct.troop.id;
+    } else {
+      tx = ct.building.x;
+      ty = ct.building.y;
+      targetKind = "building";
+      targetId = ct.building.id;
+    }
+
+    b.fireAt = now + cd;
+    const n = norm(tx - b.x, ty - b.y);
+    const yOff = b.side === "enemy" ? 6 : -6;
+    state.projectiles.push({
+      x: b.x,
+      y: b.y + yOff,
+      vx: n.x * PROJ_SPEED,
+      vy: n.y * PROJ_SPEED,
+      dmg: CANNON_SHOT_DMG,
+      fromSide: b.side,
+      hitsTowers: true,
+      projKind: "cannon_ball",
+      projRadius: 5,
+      homing: true,
+      targetKind,
+      targetId,
+    });
+  }
+
   function updateTombstoneSkeletonSpawns(dt, state) {
     const buildings = state.buildings;
     if (!buildings || !buildings.length) return;
@@ -1211,7 +1703,8 @@
   function foeInGoblinHutRange(hut, state) {
     const R = HUT_TRIGGER_RADIUS;
     for (const u of state.troops) {
-      if (u.hp <= 0 || u.side === hut.side) continue;
+      if (u.side === hut.side) continue;
+      if (u.hp <= 0 && !heavenlyTungRageActive(u)) continue;
       if (dist(hut.x, hut.y, u.x, u.y) <= R) return true;
     }
     for (const o of state.buildings || []) {
@@ -1395,6 +1888,38 @@
         faceY,
         stunUntil: 0,
         combatLocked: false,
+      });
+    } else if (type === "heavenly_tung") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "heavenly_tung",
+        x,
+        y,
+        hp: TUNG_SAHUR_HP,
+        maxHp: TUNG_SAHUR_HP,
+        speed: SPEED_TUNG_SAHUR,
+        radius: 14,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        hasHitOnce: false,
+        firstHitDelay: MELEE_FIRST_HIT_DELAY,
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_TUNG_SAHUR,
+        hitDamage: TUNG_SAHUR_DMG,
+        meleeRange: 30,
+        attackT: 0,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+        heavenlyRageActive: false,
+        heavenlyPhase: /** @type {"pause" | "move" | "charge" | "fire" | null} */ (null),
+        heavenlyPhaseStart: 0,
+        heavenlyRallyX: 0,
+        heavenlyRallyY: 0,
+        heavenlyLaserAcc: 0,
       });
     } else if (type === "mega_knight") {
       state.troops.push({
@@ -1877,6 +2402,30 @@
           combatLocked: false,
         });
       }
+    } else if (type === "bomber") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "bomber",
+        x,
+        y,
+        hp: BOMBER_HP,
+        maxHp: BOMBER_HP,
+        speed: SPEED_BOMBER,
+        radius: 4,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        faceX: 0,
+        faceY,
+        fireAt: 0,
+        rangedDmg: BOMBER_SPLASH_DMG,
+        rangedRange: BOMBER_RANGE,
+        rangedInterval: ATTACK_INTERVAL_BOMBER,
+        attackT: 0,
+        stunUntil: 0,
+        combatLocked: false,
+      });
     }
     for (let i = start; i < state.troops.length; i++) {
       const t = state.troops[i];
@@ -1945,6 +2494,21 @@
 
   function updateTroopNavAndMove(dt, troop, state) {
     if (!troopActsOnBattlefield(troop)) return;
+    if (heavenlyTungRageActive(troop)) return;
+    if (troop.garrisonBuildingId) {
+      const bd = (state.buildings || []).find((b) => b.id === troop.garrisonBuildingId);
+      if (!bd || bd.hp <= 0 || bd.kind !== "garrison_tower") {
+        delete troop.garrisonBuildingId;
+        if (bd && bd.garrisonTroopId === troop.id) bd.garrisonTroopId = null;
+        troop.bridgeIx = pickBridgeIx(troop.x, troop.y);
+        ensureBridgeLaneOx(troop);
+        if (troop.path === "garrison") troop.path = "fight";
+      } else {
+        troop.x = bd.x;
+        troop.y = bd.y;
+        return;
+      }
+    }
     if (troopStunned(troop, state.time)) return;
     if (troop.type === "mega_knight" && troop.mkJumpPhase) return;
     const speedMul = troop.type === "bir_patapin" ? (troop.patapinSpeedMul || 1) : 1;
@@ -1953,7 +2517,7 @@
     let tx = null;
     let ty = null;
     if (ct) {
-      if (ct.kind === "troop" && ct.troop.hp > 0) {
+      if (ct.kind === "troop" && ct.troop.hp > 0 && !heavenlyTungRageActive(ct.troop)) {
         tx = ct.troop.x;
         ty = ct.troop.y;
       } else if (ct.kind === "tower" && ct.tower.hp > 0) {
@@ -2036,7 +2600,7 @@
     if (troop.type === "mini_pekka") troop.attackT = 0.32;
     else     if (troop.type === "knight") troop.attackT = 0.26;
     else if (troop.type === "bir_patapin") troop.attackT = 0.22;
-    else if (troop.type === "tung_tung_tung_sahur") troop.attackT = 0.018;
+    else if (troop.type === "tung_tung_tung_sahur" || troop.type === "heavenly_tung") troop.attackT = 0.018;
     else if (troop.type === "chud" || troop.type === "mega_goblin_army") troop.attackT = 0.38;
     else if (troop.type === "mega_knight") troop.attackT = 0.34;
     else if (isRangedTroopType(troop)) troop.attackT = 0.22;
@@ -2045,6 +2609,7 @@
 
   function tryMelee(troop, state, now) {
     if (!troopActsOnBattlefield(troop)) return;
+    if (heavenlyTungRageActive(troop)) return;
     if (troopStunned(troop, now)) return;
     if (troop.type === "mega_knight") return;
     if (isRangedTroopType(troop)) return;
@@ -2055,6 +2620,7 @@
 
     if (ct.kind === "troop") {
       const o = ct.troop;
+      if (heavenlyTungRageActive(o)) return;
       if (o.hp <= 0) return;
       if (dist(troop.x, troop.y, o.x, o.y) > troop.meleeRange + o.radius * 0.5 + MELEE_REACH_BONUS) return;
       applyTroopDamage(o, troop.hitDamage);
@@ -2213,6 +2779,8 @@
         infiniteElixir: false,
         /** Training: you deploy on the top (enemy) side; AI uses the bottom. */
         playAsEnemy: false,
+        /** Training: draw attack ranges, projectile collision radii, and HP labels. */
+        combatDebug: false,
       },
     };
   }
@@ -2224,6 +2792,8 @@
       if (b.hp <= 0) continue;
       for (const u of troops) {
         if (!troopActsOnBattlefield(u)) continue;
+        if (u.garrisonBuildingId === b.id) continue;
+        if (heavenlyTungRageActive(u)) continue;
         const minD = u.radius + b.radius + padding;
         const d = dist(u.x, u.y, b.x, b.y);
         if (d >= minD || d < 1e-4) continue;
@@ -2243,7 +2813,10 @@
     );
     let bestD = Infinity;
     for (const u of state.troops) {
-      if (u.hp <= 0 || u.side === tower.side) continue;
+      if (u.side === tower.side) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (u.hp <= 0) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(tower.x, tower.y, u.x, u.y);
       if (d <= range && d < bestD) {
         bestD = d;
@@ -2296,7 +2869,11 @@
     if (!tower.aggroKind || !tower.aggroId) return null;
     if (tower.aggroKind === "troop") {
       const u = state.troops.find((x) => x.id === tower.aggroId);
-      if (!u || u.hp <= 0 || u.side === tower.side) {
+      if (!u || u.side === tower.side || heavenlyTungRageActive(u) || u.hp <= 0) {
+        clearTowerAggro(tower);
+        return null;
+      }
+      if (troopInsideGarrisonAlive(u, state)) {
         clearTowerAggro(tower);
         return null;
       }
@@ -2393,7 +2970,10 @@
     /** @type {{ kind: "troop"; troop: (typeof state.troops)[0] } | { kind: "tower"; tower: (typeof state.towers)[0] } | { kind: "building"; building: (typeof state.buildings)[0] } | null} */
     let best = null;
     for (const u of state.troops) {
-      if (u.hp <= 0 || u.side === unit.side) continue;
+      if (u.side === unit.side) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (u.hp <= 0) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(unit.x, unit.y, u.x, u.y);
       if (d <= shotR && d < bestD) {
         bestD = d;
@@ -2432,7 +3012,10 @@
     const out = [];
     const arr = [];
     for (const u of state.troops) {
-      if (u.hp <= 0 || u.side === unit.side) continue;
+      if (u.side === unit.side) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (u.hp <= 0) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(unit.x, unit.y, u.x, u.y);
       if (d <= shotR) arr.push({ ct: { kind: "troop", troop: u }, d });
     }
@@ -2505,6 +3088,7 @@
 
   function rangedTroopShoot(state, unit, now) {
     if (unit.hp <= 0 || state.over) return;
+    if (heavenlyTungRageActive(unit)) return;
     if (troopStunned(unit, now)) return;
     if (!isRangedTroopType(unit)) return;
     if (now < unit.fireAt) return;
@@ -2555,7 +3139,9 @@
             ? "witch"
             : unit.type === "musketeer"
               ? "musket"
-              : "archer";
+              : unit.type === "bomber"
+                ? "bomber"
+                : "archer";
     /** @type {"troop" | "tower" | "building"} */
     let targetKind;
     let targetId;
@@ -2579,7 +3165,15 @@
       hitsTowers: true,
       projKind,
       projRadius:
-        unit.type === "wizard" ? 6 : unit.type === "witch" ? 5.5 : unit.type === "musketeer" ? 4.5 : 4,
+        unit.type === "wizard"
+          ? 6
+          : unit.type === "witch"
+            ? 5.5
+            : unit.type === "musketeer"
+              ? 4.5
+              : unit.type === "bomber"
+                ? 5.2
+                : 4,
       homing: true,
       targetKind,
       targetId,
@@ -2590,7 +3184,9 @@
     if (!p.homing || !p.targetKind || !p.targetId) return null;
     if (p.targetKind === "troop") {
       const u = state.troops.find((t) => t.id === p.targetId);
-      if (!u || u.hp <= 0 || u.side === p.fromSide) return null;
+      if (!u || u.side === p.fromSide || heavenlyTungRageActive(u)) return null;
+      if (u.hp <= 0) return null;
+      if (troopInsideGarrisonAlive(u, state)) return null;
       return { kind: "troop", troop: u, x: u.x, y: u.y, hitR: u.radius };
     }
     if (p.targetKind === "tower") {
@@ -2631,6 +3227,7 @@
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === fromSide) continue;
       if (skipTroopId && u.id === skipTroopId) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       if (dist(u.x, u.y, cx, cy) <= radius + u.radius * 0.35) {
         applyTroopDamage(u, splashDmg);
       }
@@ -2658,6 +3255,7 @@
     if (dmg <= 0) return;
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === fromSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       if (dist(u.x, u.y, cx, cy) <= radius + u.radius * 0.35) {
         applyTroopDamage(u, dmg);
       }
@@ -2690,6 +3288,7 @@
     const dJump = MEGA_KNIGHT_JUMP_DMG;
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === fromSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(u.x, u.y, cx, cy);
       if (d <= rOut + u.radius * 0.35) {
         applyTroopDamage(u, dJump);
@@ -2735,6 +3334,7 @@
 
   function updateMegaKnight(troop, dt, state, now) {
     if (troop.type !== "mega_knight" || troop.hp <= 0) return;
+    if (troop.path === "garrison") return;
     if (troopStunned(troop, now)) {
       resetMegaKnightJump(troop);
       return;
@@ -2858,6 +3458,7 @@
           const R = FIREBALL_SPELL_RADIUS;
           for (const u of state.troops) {
             if (u.hp <= 0 || u.side === p.fromSide) continue;
+            if (troopInsideGarrisonAlive(u, state)) continue;
             if (dist(u.x, u.y, tx, ty) <= R) {
               applyTroopDamage(u, FIREBALL_SPELL_DMG);
             }
@@ -2895,19 +3496,37 @@
           continue;
         }
         if (dist(p.x, p.y, homingResolved.x, homingResolved.y) < homingResolved.hitR + pr + PROJECTILE_HIT_FUDGE) {
-          applyProjectileDamageResolved(state, p, homingResolved);
-          if (p.projKind === "wizard" || p.projKind === "witch") {
-            const splR = p.projKind === "witch" ? WITCH_SPLASH_RADIUS : WIZARD_SPLASH_RADIUS;
-            const splF = p.projKind === "witch" ? WITCH_SPLASH_FRACTION : WIZARD_SPLASH_FRACTION;
-            const splash = Math.max(1, Math.floor(p.dmg * splF));
-            applyWizardSplashAround(state, homingResolved.x, homingResolved.y, p.fromSide, splR, splash, homingResolved);
+          if (p.projKind === "bomber") {
+            applyFullAoEToFoes(
+              state,
+              homingResolved.x,
+              homingResolved.y,
+              p.fromSide,
+              BOMBER_SPLASH_RADIUS,
+              BOMBER_SPLASH_DMG,
+            );
             state.wizardSplashFx.push({
               cx: homingResolved.x,
               cy: homingResolved.y,
-              until: state.time + 0.42,
-              radius: splR,
-              kind: p.projKind === "witch" ? "witch" : "wizard",
+              until: state.time + 0.48,
+              radius: BOMBER_SPLASH_RADIUS,
+              kind: "mega_ground",
             });
+          } else {
+            applyProjectileDamageResolved(state, p, homingResolved);
+            if (p.projKind === "wizard" || p.projKind === "witch") {
+              const splR = p.projKind === "witch" ? WITCH_SPLASH_RADIUS : WIZARD_SPLASH_RADIUS;
+              const splF = p.projKind === "witch" ? WITCH_SPLASH_FRACTION : WIZARD_SPLASH_FRACTION;
+              const splash = Math.max(1, Math.floor(p.dmg * splF));
+              applyWizardSplashAround(state, homingResolved.x, homingResolved.y, p.fromSide, splR, splash, homingResolved);
+              state.wizardSplashFx.push({
+                cx: homingResolved.x,
+                cy: homingResolved.y,
+                until: state.time + 0.42,
+                radius: splR,
+                kind: p.projKind === "witch" ? "witch" : "wizard",
+              });
+            }
           }
           projectiles.splice(i, 1);
           continue;
@@ -2918,6 +3537,7 @@
       let hit = false;
       for (const u of troops) {
         if (u.hp <= 0 || u.side === p.fromSide) continue;
+        if (troopInsideGarrisonAlive(u, state)) continue;
         if (dist(p.x, p.y, u.x, u.y) < u.radius + pr) {
           applyTroopDamage(u, p.dmg);
           hit = true;
@@ -3150,6 +3770,7 @@
     if (card === "mini_pekka") return MINI_PEKKA_COST;
     if (card === "knight") return KNIGHT_COST;
     if (card === "tung_tung_tung_sahur") return TUNG_SAHUR_COST;
+    if (card === "heavenly_tung") return HEAVENLY_TUNG_COST;
     if (card === "bir_bir_patapins") return BIR_BIR_PATAPINS_COST;
     if (card === "wizard") return WIZARD_COST;
     if (card === "electro_wizard") return ELECTRO_WIZARD_COST;
@@ -3167,9 +3788,12 @@
     if (card === "arrows") return ARROWS_COST;
     if (card === "fireball") return FIREBALL_COST;
     if (card === "goblin_hut") return GOBLIN_HUT_COST;
+    if (card === "garrison_tower") return GARRISON_TOWER_COST;
+    if (card === "cannon") return CANNON_COST;
     if (card === "mega_goblin_army") return MEGA_GOBLIN_ARMY_COST;
     if (card === "zap") return ZAP_COST;
     if (card === "freeze") return FREEZE_COST;
+    if (card === "bomber") return BOMBER_COST;
     return SKELETON_COST;
   }
 
@@ -3190,6 +3814,8 @@
     if (cardId === "musketeer")
       return { name: "Musketeer", img: "assets/musketeer-card.svg", cost };
     if (cardId === "skeleton") return { name: "Skeletons", img: "assets/skeleton-w0.svg", cost };
+    if (cardId === "bomber")
+      return { name: "Bomber", img: "assets/bomber-w0.svg", cost };
     if (cardId === "goblins") return { name: "Goblins", img: "assets/goblins-card.svg", cost };
     if (cardId === "goblin_gang")
       return { name: "Goblin Gang", img: "assets/goblin-gang-card.svg", cost };
@@ -3198,6 +3824,12 @@
       return {
         name: "Tung Tung Tung Sahur",
         img: "assets/tung-tung-tung-sahur.png",
+        cost,
+      };
+    if (cardId === "heavenly_tung")
+      return {
+        name: "Heavenly Tung",
+        img: "assets/heavenly-tung.png",
         cost,
       };
     if (cardId === "bir_bir_patapins")
@@ -3211,6 +3843,9 @@
     if (cardId === "arrows") return { name: "Arrows", img: "assets/arrows-card.svg", cost };
     if (cardId === "fireball") return { name: "Fireball", img: "assets/fireball-card.svg", cost };
     if (cardId === "goblin_hut") return { name: "Goblin Hut", img: "assets/goblin-hut-card.svg", cost };
+    if (cardId === "cannon") return { name: "Cannon", img: "assets/cannon-card.svg", cost };
+    if (cardId === "garrison_tower")
+      return { name: "Garrison Tower", img: "assets/garrison-tower-card.svg", cost };
     if (cardId === "mega_goblin_army")
       return { name: "Mega Goblin Army", img: "assets/mega-goblin-army-card.svg", cost };
     if (cardId === "zap") return { name: "Zap", img: "assets/zap-card.svg", cost };
@@ -3231,8 +3866,13 @@
   }
 
   function spawnUnitOrBuildingNow(state, side, card, x, y) {
+    const prevTroopLen = state.troops.length;
     if (card === "goblin_hut") {
       createGoblinHutBuilding(side, x, y, state);
+    } else if (card === "cannon") {
+      createCannonBuilding(side, x, y, state);
+    } else if (card === "garrison_tower") {
+      createGarrisonTowerBuilding(side, x, y, state);
     } else if (card === "tombstone") {
       createTombstoneBuilding(side, x, y, state);
     } else if (card === "bir_bir_patapins") {
@@ -3247,7 +3887,9 @@
       card === "musketeer" ||
       card === "chud" ||
       card === "mega_goblin_army" ||
-      card === "tung_tung_tung_sahur"
+      card === "tung_tung_tung_sahur" ||
+      card === "heavenly_tung" ||
+      card === "bomber"
     ) {
       createTroop(side, card, x, y, state);
     } else if (card === "archers") {
@@ -3264,6 +3906,9 @@
       createTroop(side, "mega_army", x, y, state);
     } else {
       createTroop(side, "skeleton", x, y, state);
+    }
+    if (state.troops.length > prevTroopLen) {
+      attachNewTroopsToGarrisonFrom(state, prevTroopLen);
     }
   }
 
@@ -3300,6 +3945,7 @@
     const R = ARROWS_SPELL_RADIUS;
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === attackerSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       if (dist(u.x, u.y, cx, cy) <= R) {
         applyTroopDamage(u, ARROWS_SPELL_DMG);
       }
@@ -3347,6 +3993,7 @@
     const stunT = state.time + ZAP_STUN_DURATION;
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === attackerSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       if (dist(u.x, u.y, cx, cy) <= R) {
         applyTroopDamage(u, ZAP_SPELL_DMG);
         u.stunUntil = Math.max(u.stunUntil || 0, stunT);
@@ -3379,6 +4026,7 @@
     const stunT = state.time + ELECTRO_STUN_SEC;
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === attackerSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       if (dist(u.x, u.y, cx, cy) <= R) {
         applyTroopDamage(u, dmg);
         u.stunUntil = Math.max(u.stunUntil || 0, stunT);
@@ -3413,6 +4061,7 @@
     const stunT = until;
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === attackerSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
       if (dist(u.x, u.y, cx, cy) <= R) {
         applyTroopDamage(u, FREEZE_SPELL_DMG);
         u.stunUntil = Math.max(u.stunUntil || 0, stunT);
@@ -3638,11 +4287,14 @@
   function applyRemoteBattleDeploy(x, y, card) {
     const state = stateRef.current;
     if (!state || state.over) return;
+    /** PvP: never block opponent spawns on elixir — local regen can drift under lag and would drop real troops. */
+    const relaxRemoteElixir = state.matchMode === "battle";
     const yMir = H - y;
     if (
       card !== "mini_pekka" &&
       card !== "knight" &&
       card !== "skeleton" &&
+      card !== "bomber" &&
       card !== "goblins" &&
       card !== "goblin_gang" &&
       card !== "archers" &&
@@ -3651,6 +4303,8 @@
       card !== "arrows" &&
       card !== "fireball" &&
       card !== "goblin_hut" &&
+      card !== "cannon" &&
+      card !== "garrison_tower" &&
       card !== "tombstone" &&
       card !== "mega_goblin_army" &&
       card !== "zap" &&
@@ -3662,12 +4316,13 @@
       card !== "musketeer" &&
       card !== "chud" &&
       card !== "tung_tung_tung_sahur" &&
+      card !== "heavenly_tung" &&
       card !== "bir_bir_patapins" &&
       card !== "witch"
     )
       return;
     const cost = cardCost(card);
-    if (state.enemyElixir < cost) return;
+    if (!relaxRemoteElixir && state.enemyElixir < cost) return;
     if (card === "arrows") {
       const cx = clamp(x, 16, W - 16);
       const cy = clamp(yMir, 16, H - 16);
@@ -3699,6 +4354,7 @@
     const snapped = snapToDeployable(state, "enemy", x, yMir);
     if (!snapped) return;
     state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+    /** Opponent’s units always use side `"enemy"` on this client (their grass is mirrored). */
     queueDeploySpawn(state, "enemy", card, snapped.x, snapped.y);
   }
 
@@ -3738,6 +4394,7 @@
         const id = ch.doc.id;
         const d = ch.doc.data();
         if (!d || d.by === battleNet.guestId) return;
+        if (battleNet.opponentGuestId && d.by !== battleNet.opponentGuestId) return;
         if (battleNet.seenMoveIds.has(id)) return;
         battleNet.seenMoveIds.add(id);
         persistSeenMoveIds();
@@ -3984,6 +4641,7 @@
     processPendingDeploys(state);
     updateWitchSpawns(dt, state);
     updateBirPatapinEnrage(state);
+    updateHeavenlyTungRage(dt, state);
 
     if (!battleNet.matchId) {
       enemyBrain(dt, state);
@@ -3992,6 +4650,8 @@
     updateGoblinHutDecay(dt, state);
     updateHutSpawns(dt, state);
     updateTombstoneDecay(dt, state);
+    updateCannonDecay(dt, state);
+    updateGarrisonTowerDecay(dt, state);
     updateTombstoneSkeletonSpawns(dt, state);
 
     for (const u of state.troops) {
@@ -4024,6 +4684,9 @@
 
     for (const tower of state.towers) {
       towerShoot(state, tower, now);
+    }
+    for (const bd of state.buildings || []) {
+      if (bd.kind === "cannon") cannonBuildingShoot(state, bd, now);
     }
 
     processMegaGoblinArmyDeathSpawns(state);
@@ -4240,6 +4903,18 @@
         fallback: "#c4a574",
       };
     }
+    if (u.type === "heavenly_tung") {
+      return {
+        img: SPRITES.heavenlyTung,
+        s: 64,
+        atkMax: 0.018,
+        lunge: 12,
+        tilt: 0.55,
+        slashW: 2.4,
+        arcR: 24,
+        fallback: "#fef9c3",
+      };
+    }
     if (u.type === "bir_patapin") {
       return {
         img: SPRITES.birPatapin,
@@ -4310,6 +4985,18 @@
         slashW: 1.2,
         arcR: 10,
         fallback: "#16a34a",
+      };
+    }
+    if (u.type === "bomber") {
+      return {
+        img: pickWalkImage(SPRITES.bomberWalk, wf),
+        s: DRAW_PX_SKEL,
+        atkMax: 0.22,
+        lunge: 3,
+        tilt: 0.2,
+        slashW: 1.2,
+        arcR: 10,
+        fallback: "#38bdf8",
       };
     }
     if (u.type === "wizard") {
@@ -4400,7 +5087,7 @@
     const vis = troopVisual(u, state);
     if (patapinGhostActive(u)) {
       ctx.globalAlpha = 0.5;
-    } else if (u.hp <= 0) {
+    } else if (u.hp <= 0 && !heavenlyTungRageActive(u)) {
       ctx.globalAlpha = 0.25;
     }
 
@@ -4560,6 +5247,25 @@
       ctx.restore();
     }
 
+    if (heavenlyTungRageActive(u) && u.heavenlyPhase === "charge" && state) {
+      const elapsed = state.time - u.heavenlyPhaseStart;
+      const prog = clamp(elapsed / HEAVENLY_TUNG_CHARGE_SEC, 0, 1);
+      const r = HEAVENLY_TUNG_CHARGE_MAX_R * prog;
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      ctx.fillStyle = `rgba(0,0,0,${0.18 + 0.52 * prog})`;
+      ctx.beginPath();
+      ctx.arc(u.x, drawY, Math.max(4, r), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = `rgba(15,23,42,${0.55 + 0.35 * prog})`;
+      ctx.lineWidth = 2 + prog * 2;
+      ctx.beginPath();
+      ctx.arc(u.x, drawY, Math.max(4, r), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if (troopActsOnBattlefield(u) && atkK > 0) {
       ctx.save();
       const mkReach = u.type === "mega_knight" ? 22 : 0;
@@ -4570,6 +5276,8 @@
           ? "rgba(147,197,253,0.95)"
           : u.type === "tung_tung_tung_sahur"
             ? "rgba(234,179,8,0.95)"
+            : u.type === "heavenly_tung"
+              ? "rgba(250,204,21,0.95)"
             : u.type === "bir_patapin"
               ? "rgba(74,222,128,0.95)"
             : u.type === "electro_wizard"
@@ -4577,7 +5285,9 @@
               : u.type === "mega_knight"
                 ? "rgba(251,191,36,0.95)"
                 : u.type === "chud" || u.type === "mega_goblin_army"
-                  ? "rgba(134,239,172,0.95)"
+                ? "rgba(134,239,172,0.95)"
+                : u.type === "bomber"
+                  ? "rgba(56,189,248,0.92)"
                   : "rgba(255,255,255,0.9)";
       ctx.lineWidth = vis.slashW;
       ctx.lineCap = "round";
@@ -4596,13 +5306,15 @@
 
     ctx.globalAlpha = 1;
 
-    if (u.hp > 0 && !patapinGhostActive(u)) {
+    if (((u.hp > 0 && !patapinGhostActive(u)) || heavenlyTungRageActive(u)) && u.maxHp > 1) {
       const bw =
         u.type === "mini_pekka"
           ? 34
           : u.type === "knight"
             ? 30
             : u.type === "tung_tung_tung_sahur"
+              ? 44
+            : u.type === "heavenly_tung"
               ? 44
             : u.type === "bir_patapin"
               ? 36
@@ -4621,8 +5333,10 @@
               : u.type === "witch"
                 ? 28
               : u.type === "musketeer"
-                  ? 32
-                  : 18;
+                ? 32
+              : u.type === "bomber"
+                ? 20
+                : 18;
       let by = u.y + u.radius + 7;
       const smax = u.shieldMax != null ? u.shieldMax : 0;
       const shp = u.shieldHp != null ? u.shieldHp : 0;
@@ -4634,7 +5348,13 @@
         ctx.fillRect(u.x - bw / 2, by, bw * spct, 4);
         by += 6;
       }
-      if (u.maxHp > 1) {
+      if (heavenlyTungRageActive(u) && state) {
+        const pulse = 0.82 + 0.18 * Math.sin((state.time || 0) * 14);
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(u.x - bw / 2, by, bw, 4);
+        ctx.fillStyle = `rgba(250,204,21,${0.65 + 0.35 * pulse})`;
+        ctx.fillRect(u.x - bw / 2, by, bw * pulse, 4);
+      } else if (u.maxHp > 1) {
         const pct = u.hp / u.maxHp;
         ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.fillRect(u.x - bw / 2, by, bw, 4);
@@ -4727,6 +5447,38 @@
         ctx.fillStyle = "#facc15";
         ctx.beginPath();
         ctx.arc(r * 2.35, 0, r * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === "bomber") {
+        ctx.fillStyle = "#0f172a";
+        ctx.strokeStyle = "#020617";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.arc(0, r * 0.15, r * 1.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = "#facc15";
+        ctx.lineWidth = 0.8;
+        ctx.setLineDash([1.2, 1.2]);
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 1.05);
+        ctx.lineTo(r * 0.35, -r * 1.35);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(250,250,250,0.25)";
+        ctx.beginPath();
+        ctx.arc(-r * 0.4, -r * 0.2, r * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === "cannon_ball") {
+        ctx.fillStyle = "#27272a";
+        ctx.strokeStyle = "#18181b";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "rgba(250,250,250,0.35)";
+        ctx.beginPath();
+        ctx.arc(-r * 0.35, -r * 0.35, r * 0.35, 0, Math.PI * 2);
         ctx.fill();
       } else if (kind === "fireball_spell") {
         ctx.shadowColor = "rgba(251,146,60,0.95)";
@@ -4842,6 +5594,41 @@
       const dur = kind === "electro_hit" ? 0.28 : 0.42;
       const t = clamp((f.until - state.time) / dur, 0, 1);
       const pulse = rad * (0.62 + 0.38 * (1 - t));
+      if (kind === "heavenly_nuke") {
+        const dur = HEAVENLY_TUNG_NUKE_FX_SEC;
+        const life = Math.max(0, f.until - state.time);
+        const k = clamp(1 - life / dur, 0, 1);
+        const r0 = rad * (0.35 + 1.85 * k);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r0 * 1.1);
+        grd.addColorStop(0, `rgba(255,255,255,${0.5 * (1 - k * 0.7)})`);
+        grd.addColorStop(0.25, `rgba(254,215,170,${0.55 * (1 - k)})`);
+        grd.addColorStop(0.55, `rgba(239,68,68,${0.45 * (1 - k * 0.5)})`);
+        grd.addColorStop(1, "rgba(127,29,29,0)");
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r0 * 1.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+        for (let ring = 0; ring < 3; ring++) {
+          const lag = ring * 0.12;
+          const rk = clamp(k - lag, 0, 1);
+          const rr = rad * (0.4 + 1.4 * rk);
+          ctx.strokeStyle = `rgba(255,237,213,${0.55 * (1 - rk)})`;
+          ctx.lineWidth = 4 - ring;
+          ctx.beginPath();
+          ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = `rgba(220,38,38,${0.4 * (1 - rk * 0.8)})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, rr * 0.92, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+        continue;
+      }
       if (kind === "tung_boom") {
         ctx.save();
         const img = SPRITES.tungBoom;
@@ -5008,6 +5795,71 @@
       ctx.fillRect(px, barY, w * pct, 5);
       return;
     }
+    if (b.kind === "cannon") {
+      const w = 34;
+      const h = 26;
+      const px = b.x - w / 2;
+      const py = b.y - h / 2;
+      if (b.hp <= 0) ctx.globalAlpha = 0.28;
+      ctx.save();
+      ctx.fillStyle = "#475569";
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(px, py + 8, w, h - 8);
+      ctx.strokeRect(px, py + 8, w, h - 8);
+      ctx.fillStyle = "#64748b";
+      ctx.fillRect(px + 6, py + 4, w - 12, 10);
+      ctx.strokeRect(px + 6, py + 4, w - 12, 10);
+      ctx.fillStyle = "#1e293b";
+      ctx.beginPath();
+      ctx.ellipse(b.x + 10, py + 9, 9, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#94a3b8";
+      ctx.beginPath();
+      ctx.arc(b.x, py + 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      const pct = Math.max(0, b.hp / b.maxHp);
+      const barY = b.side === "enemy" ? py + h + 6 : py - 12;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, barY, w, 5);
+      ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
+      ctx.fillRect(px, barY, w * pct, 5);
+      return;
+    }
+    if (b.kind === "garrison_tower") {
+      const w = 40;
+      const h = 36;
+      const px = b.x - w / 2;
+      const py = b.y - h / 2;
+      if (b.hp <= 0) ctx.globalAlpha = 0.28;
+      ctx.save();
+      ctx.fillStyle = "#44403c";
+      ctx.strokeStyle = "#292524";
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(px, py + 10, w, h - 10);
+      ctx.strokeRect(px, py + 10, w, h - 10);
+      ctx.fillStyle = "#57534e";
+      for (let i = 0; i < 3; i++) {
+        const bx = px + 6 + i * 12;
+        ctx.fillRect(bx, py + 2, 8, 12);
+        ctx.strokeRect(bx, py + 2, 8, 12);
+      }
+      ctx.fillStyle = "#1c1917";
+      ctx.fillRect(px + 12, py + 18, 16, 12);
+      ctx.strokeStyle = "#0c0a09";
+      ctx.strokeRect(px + 12, py + 18, 16, 12);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      const pct = Math.max(0, b.hp / b.maxHp);
+      const barY = b.side === "enemy" ? py + h + 6 : py - 12;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, barY, w, 5);
+      ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
+      ctx.fillRect(px, barY, w * pct, 5);
+      return;
+    }
     if (b.kind !== "goblin_hut") return;
     const w = 36;
     const h = 30;
@@ -5094,6 +5946,224 @@
     return `${m}:${String(r).padStart(2, "0")}`;
   }
 
+  /** Three red lasers from Heavenly Tung (fire phase) to nearest foes. */
+  function drawHeavenlyRageLasers(ctx, state) {
+    for (const src of state.troops) {
+      if (!heavenlyTungRageActive(src) || src.heavenlyPhase !== "fire") continue;
+      const picks = pickHeavenlyLaserTargets(state, src, 3);
+      const sx = src.x;
+      const sy = src.y;
+      ctx.save();
+      for (const p of picks) {
+        ctx.strokeStyle = "#b91c1c";
+        ctx.lineWidth = 3.2;
+        ctx.shadowColor = "rgba(220,38,38,0.95)";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(254,202,202,0.9)";
+        ctx.lineWidth = 1.2;
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
+  function combatDebugEnabled(state) {
+    return (
+      !state.over &&
+      state.matchMode === "training" &&
+      !!state.testing &&
+      state.testing.combatDebug === true
+    );
+  }
+
+  /**
+   * Training-only overlay: melee/ranged radii, tower & building ranges, projectiles, HP text.
+   */
+  function drawCombatDebugOverlay(ctx, state) {
+    if (!combatDebugEnabled(state)) return;
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.font = "600 9px ui-monospace,monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+
+    function hpLine(x, y, u) {
+      let hpTxt;
+      if (u.hp != null && u.maxHp != null) {
+        if (heavenlyTungRageActive(u) && u.heavenlyPhase) {
+          hpTxt = String(u.heavenlyPhase).toUpperCase();
+        } else {
+          const smax = u.shieldMax != null ? u.shieldMax : 0;
+          const shp = u.shieldHp != null ? u.shieldHp : 0;
+          const h = patapinGhostActive(u) ? 0 : Math.max(0, Math.ceil(u.hp));
+          if (smax > 0 && shp > 0) hpTxt = `${h}+${Math.ceil(shp)}/${Math.ceil(u.maxHp)}`;
+          else hpTxt = `${h}/${Math.ceil(u.maxHp)}`;
+        }
+      } else if (u.hp != null) hpTxt = String(Math.ceil(Math.max(0, u.hp)));
+      else return;
+      ctx.fillStyle = "rgba(15,23,42,0.92)";
+      ctx.strokeStyle = "rgba(148,163,184,0.7)";
+      ctx.lineWidth = 1;
+      const tw = Math.max(26, ctx.measureText(hpTxt).width + 6);
+      const px = x - tw / 2;
+      const py = y - 4;
+      ctx.setLineDash([]);
+      ctx.fillRect(px, py - 11, tw, 13);
+      ctx.strokeRect(px, py - 11, tw, 13);
+      ctx.fillStyle = "#e2e8f0";
+      ctx.fillText(hpTxt, x, py);
+      ctx.setLineDash([5, 5]);
+    }
+
+    for (const u of state.troops) {
+      if (!troopActsOnBattlefield(u)) continue;
+      const col = u.side === "player" ? "96, 165, 250" : "248, 113, 113";
+
+      if (u.meleeRange != null && !isRangedTroopType(u)) {
+        const mr = u.meleeRange + MELEE_REACH_BONUS;
+        ctx.strokeStyle = `rgba(${col}, 0.5)`;
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.arc(u.x, u.y, mr, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (u.meleeRange != null && isRangedTroopType(u)) {
+        const mr = u.meleeRange + MELEE_REACH_BONUS;
+        ctx.strokeStyle = `rgba(${col}, 0.28)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(u.x, u.y, mr, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      if (isRangedTroopType(u) && u.rangedRange != null) {
+        const R = u.rangedRange + RANGED_STANDOFF_SLACK;
+        ctx.strokeStyle = `rgba(${col}, 0.58)`;
+        ctx.lineWidth = 1.35;
+        ctx.beginPath();
+        ctx.arc(u.x, u.y, R, 0, Math.PI * 2);
+        ctx.stroke();
+        if (u.type === "wizard") {
+          ctx.strokeStyle = `rgba(192, 132, 252, 0.42)`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(u.x, u.y, WIZARD_SPLASH_RADIUS, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (u.type === "witch") {
+          ctx.strokeStyle = `rgba(74, 222, 128, 0.42)`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(u.x, u.y, WITCH_SPLASH_RADIUS, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (u.type === "bomber") {
+          ctx.strokeStyle = `rgba(56, 189, 248, 0.45)`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(u.x, u.y, BOMBER_SPLASH_RADIUS, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      if (u.type === "mega_knight") {
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.45)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(u.x, u.y, MEGA_KNIGHT_JUMP_RANGE, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.28)";
+        ctx.beginPath();
+        ctx.arc(u.x, u.y, MEGA_KNIGHT_JUMP_SLAM_OUTER, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      hpLine(u.x, u.y - u.radius - 2, u);
+    }
+
+    for (const tw of state.towers) {
+      if (tw.hp <= 0) continue;
+      const col = tw.side === "player" ? "250, 204, 21" : "251, 191, 36";
+      const alpha = tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side) ? 0.22 : 0.48;
+      const rng = tw.kind === "king" ? KING_RANGE : PRINCESS_RANGE;
+      ctx.strokeStyle = `rgba(${col}, ${alpha})`;
+      ctx.lineWidth = tw.kind === "king" ? 1.5 : 1.25;
+      ctx.beginPath();
+      ctx.arc(tw.x, tw.y, rng, 0, Math.PI * 2);
+      ctx.stroke();
+      hpLine(tw.x, tw.y - (tw.kind === "king" ? 34 : 28), tw);
+    }
+
+    for (const b of state.buildings || []) {
+      if (b.hp <= 0) continue;
+      const col = b.side === "player" ? "52, 211, 153" : "45, 212, 191";
+      if (b.kind === "cannon") {
+        ctx.strokeStyle = `rgba(${col}, 0.52)`;
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, CANNON_RANGE, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (b.kind === "goblin_hut") {
+        ctx.strokeStyle = `rgba(${col}, 0.35)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, HUT_TRIGGER_RADIUS, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (b.kind === "garrison_tower") {
+        ctx.strokeStyle = `rgba(${col}, 0.42)`;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius * 0.82, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      hpLine(b.x, b.y - b.radius - 4, b);
+    }
+
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.type !== "mega_goblin_army") continue;
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.38)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(u.x, u.y, HUT_TRIGGER_RADIUS, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.setLineDash([]);
+    for (const p of state.projectiles || []) {
+      const pr = p.projRadius ?? PROJ_RADIUS;
+      ctx.strokeStyle = "rgba(251, 191, 36, 0.75)";
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = "rgba(251, 191, 36, 0.12)";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, pr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      const dmgTxt = p.dmg != null ? `r${pr} · ${Math.round(p.dmg)}` : `r${pr}`;
+      ctx.font = "600 8px ui-monospace,monospace";
+      ctx.fillStyle = "rgba(15,23,42,0.88)";
+      ctx.strokeStyle = "rgba(251, 191, 36, 0.5)";
+      ctx.lineWidth = 0.8;
+      const tw = ctx.measureText(dmgTxt).width + 4;
+      ctx.fillRect(p.x - tw / 2, p.y - pr - 16, tw, 11);
+      ctx.strokeRect(p.x - tw / 2, p.y - pr - 16, tw, 11);
+      ctx.fillStyle = "#fef3c7";
+      ctx.textBaseline = "middle";
+      ctx.fillText(dmgTxt, p.x, p.y - pr - 10.5);
+      ctx.textBaseline = "bottom";
+      ctx.font = "600 9px ui-monospace,monospace";
+    }
+
+    ctx.restore();
+  }
+
   function drawPvpMatchHud(ctx, state) {
     if (state.matchMode !== "battle" || state.over) return;
     const rem = pvpRegulationRemainingSec(state);
@@ -5142,7 +6212,9 @@
     for (const b of state.buildings || []) {
       if (b.hp > 0) layers.push({ k: "b", y: b.y, b });
     }
-    const drawTroops = state.troops.filter((u) => u.hp > 0 || patapinGhostActive(u));
+    const drawTroops = state.troops.filter(
+      (u) => u.hp > 0 || patapinGhostActive(u) || heavenlyTungRageActive(u),
+    );
     for (const u of drawTroops) {
       layers.push({ k: "u", y: u.y, u });
     }
@@ -5156,9 +6228,11 @@
     drawFreezeSpellFx(ctx, state);
     drawZapSpellFx(ctx, state);
     drawProjectiles(ctx, state.projectiles);
+    drawHeavenlyRageLasers(ctx, state);
     drawWizardSplashFx(ctx, state);
 
     drawEmoteBubbles(ctx, state);
+    drawCombatDebugOverlay(ctx, state);
 
     ctx.fillStyle = "rgba(226,232,240,0.5)";
     ctx.font = "600 11px system-ui";
@@ -5205,6 +6279,7 @@
     const deckLine =
       `<strong>Deck</strong>: 8 <strong>unique</strong> cards — 4 in hand, 4 in queue (no duplicates in the rotation). ` +
       `<strong>Goblin Hut</strong> (${GOBLIN_HUT_COST}): HP decays over <strong>~${GOBLIN_HUT_LIFETIME_SEC}s</strong> like a timed building; dashed <strong>${HUT_TRIGGER_RADIUS}px</strong> ring; with a foe inside, one Spear Goblin every <strong>${HUT_SPAWN_INTERVAL}s</strong> (cap ${MAX_SPEAR_PER_HUT}). ` +
+      `<strong>Cannon</strong> (${CANNON_COST}): <strong>${CANNON_HP}</strong> HP decays over <strong>${CANNON_LIFETIME_SEC}s</strong>; shoots ground troops/buildings in range (<strong>${CANNON_RANGE}px</strong>, <strong>${CANNON_SHOT_DMG}</strong> / <strong>${CANNON_FIRE_INTERVAL}s</strong>). ` +
       `<strong>Mega Goblin Army</strong> (${MEGA_GOBLIN_ARMY_COST}): <strong>Chud</strong> + hut head; dashed <strong>${HUT_TRIGGER_RADIUS}px</strong> ring follows him — with a foe inside, one Spear Goblin / <strong>${MEGA_GOBLIN_ARMY_SPEAR_INTERVAL}s</strong> (cap ${MAX_SPEAR_PER_HUT} live). On death, <strong>5</strong> melee goblins. ` +
       `<strong>Mega Army</strong> (${MEGA_ARMY_COST}): <strong>${MEGA_ARMY_GUARD_COUNT}</strong> shielded skeleton guards (${SKELETON_GUARD_SHIELD_HP} shield HP, overflow wasted), <strong>${MEGA_ARMY_SKELETON_COUNT}</strong> skeletons, <strong>1</strong> witch. ` +
       `<strong>Spear Goblins</strong> (${SPEAR_GOBLINS_COST}): spawns <strong>3</strong> ranged spear goblins. ` +
@@ -5290,6 +6365,10 @@
     } else if (selCard === "goblin_hut") {
       els.hint.textContent =
         `Place on your grass. HP slowly drains (~${GOBLIN_HUT_LIFETIME_SEC}s lifetime). Ring = spawn range: one Spear Goblin / 2s while an enemy is inside.`;
+    } else if (selCard === "cannon") {
+      els.hint.textContent = `Cannon (${CANNON_COST}): ${CANNON_HP} HP drains over ${CANNON_LIFETIME_SEC}s. Fires at the nearest enemy troop or building in range (${CANNON_RANGE}px, ${CANNON_SHOT_DMG} dmg / ${CANNON_FIRE_INTERVAL}s).`;
+    } else if (selCard === "garrison_tower") {
+      els.hint.textContent = `Garrison Tower (${GARRISON_TOWER_COST}): ${GARRISON_TOWER_HP} HP drains over ${GARRISON_TOWER_LIFETIME_SEC}s. Deploy a troop on it — they stay inside, shoot out, and are untargetable until the tower is destroyed.`;
     } else if (selCard === "mega_goblin_army") {
       els.hint.textContent =
         `Chud that spawns Spear Goblins like a hut: ring moves with him; enemy inside = one spear / ${MEGA_GOBLIN_ARMY_SPEAR_INTERVAL}s (max ${MAX_SPEAR_PER_HUT} alive). Death: 5 melee goblins.`;
@@ -5400,6 +6479,7 @@
     const testingEnemySpawns = document.getElementById("testing-enemy-spawns");
     const testingInfiniteElixir = document.getElementById("testing-infinite-elixir");
     const testingPlayAsEnemy = document.getElementById("testing-play-as-enemy");
+    const testingCombatDebug = document.getElementById("testing-combat-debug");
     const testingKillAll = document.getElementById("testing-kill-all");
 
     function syncTestingUi() {
@@ -5413,6 +6493,7 @@
       testingEnemySpawns.checked = st.testing.enemySpawns !== false;
       testingInfiniteElixir.checked = !!st.testing.infiniteElixir;
       if (testingPlayAsEnemy) testingPlayAsEnemy.checked = !!st.testing.playAsEnemy;
+      if (testingCombatDebug) testingCombatDebug.checked = !!st.testing.combatDebug;
     }
 
     if (testingPanel && testingEnemySpawns && testingInfiniteElixir && testingKillAll) {
@@ -5428,6 +6509,12 @@
         testingPlayAsEnemy.addEventListener("change", () => {
           const st = stateRef.current;
           if (st && st.testing) st.testing.playAsEnemy = testingPlayAsEnemy.checked;
+        });
+      }
+      if (testingCombatDebug) {
+        testingCombatDebug.addEventListener("change", () => {
+          const st = stateRef.current;
+          if (st && st.testing) st.testing.combatDebug = testingCombatDebug.checked;
         });
       }
       testingKillAll.addEventListener("click", () => {
@@ -5451,6 +6538,7 @@
           stateRef.current.testing.enemySpawns = testingEnemySpawns.checked;
           stateRef.current.testing.infiniteElixir = testingInfiniteElixir.checked;
           if (testingPlayAsEnemy) stateRef.current.testing.playAsEnemy = testingPlayAsEnemy.checked;
+          if (testingCombatDebug) stateRef.current.testing.combatDebug = testingCombatDebug.checked;
         }
         syncTestingUi();
       }
@@ -5515,6 +6603,7 @@
     st.testing.enemySpawns = true;
     st.testing.infiniteElixir = false;
     st.testing.playAsEnemy = false;
+    st.testing.combatDebug = false;
     stateRef.current = st;
     gameRunning = true;
     lastFrameT = performance.now();
@@ -5554,7 +6643,7 @@
     getCardPreview: (cardId) => cardUiInfo(String(cardId)),
   };
 
-  const NIGHT_ARENA_VERSION = 100;
+  const NIGHT_ARENA_VERSION = 117;
   window.NIGHT_ARENA_VERSION = NIGHT_ARENA_VERSION;
   function paintVersionBadge() {
     document.querySelectorAll("[data-na-version]").forEach((el) => {
