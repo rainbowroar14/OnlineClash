@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="batArmyBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c4a6e"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="4" fill="url(#batArmyBg)"/>
+  <rect x="2" y="2" width="28" height="28" rx="3" fill="#0f172a" opacity="0.35"/>
+  <!-- Many small pixel bats (swarm look); each ~8–11px wingspan -->
+  <g opacity="0.95">
+    <!-- bat @2,5 -->
+    <rect x="3" y="6" width="1" height="2" fill="#c084fc"/>
+    <rect x="6" y="6" width="1" height="2" fill="#c084fc"/>
+    <rect x="2" y="8" width="7" height="2" fill="#7c3aed"/>
+    <rect x="4" y="10" width="3" height="3" fill="#4c1d95"/>
+    <rect x="4" y="11" width="1" height="1" fill="#22d3ee"/>
+    <rect x="6" y="11" width="1" height="1" fill="#22d3ee"/>
+  </g>
+  <g opacity="0.9">
+    <!-- bat @12,3 -->
+    <rect x="14" y="4" width="1" height="2" fill="#e9d5ff"/>
+    <rect x="17" y="4" width="1" height="2" fill="#e9d5ff"/>
+    <rect x="13" y="6" width="7" height="2" fill="#a855f7"/>
+    <rect x="15" y="8" width="3" height="3" fill="#5b21b6"/>
+    <rect x="16" y="9" width="1" height="1" fill="#67e8f9"/>
+  </g>
+  <g opacity="0.92">
+    <!-- bat @22,6 clipped wing -->
+    <rect x="24" y="8" width="1" height="2" fill="#c084fc"/>
+    <rect x="27" y="8" width="1" height="2" fill="#c084fc"/>
+    <rect x="23" y="10" width="7" height="2" fill="#7c3aed"/>
+    <rect x="24" y="12" width="3" height="3" fill="#4c1d95"/>
+    <rect x="25" y="13" width="1" height="1" fill="#22d3ee"/>
+    <rect x="27" y="13" width="1" height="1" fill="#22d3ee"/>
+  </g>
+  <g opacity="0.88">
+    <!-- bat @4,13 -->
+    <rect x="5" y="14" width="1" height="2" fill="#a855f7"/>
+    <rect x="8" y="14" width="1" height="2" fill="#a855f7"/>
+    <rect x="4" y="16" width="7" height="2" fill="#6d28d9"/>
+    <rect x="6" y="18" width="3" height="2" fill="#4c2889"/>
+    <rect x="7" y="19" width="1" height="1" fill="#bae6fd"/>
+  </g>
+  <g opacity="0.95">
+    <!-- center bat larger feel @13,14 -->
+    <rect x="16" y="15" width="1" height="2" fill="#e9d5ff"/>
+    <rect x="19" y="15" width="1" height="2" fill="#e9d5ff"/>
+    <rect x="14" y="17" width="9" height="2" fill="#7c3aed"/>
+    <rect x="16" y="16" width="2" height="2" fill="#9333ea"/>
+    <rect x="20" y="16" width="2" height="2" fill="#9333ea"/>
+    <rect x="16" y="19" width="4" height="4" fill="#4c1d95"/>
+    <rect x="17" y="20" width="1" height="1" fill="#22d3ee"/>
+    <rect x="19" y="20" width="1" height="1" fill="#22d3ee"/>
+    <rect x="17" y="22" width="2" height="1" fill="#fbcfe8"/>
+  </g>
+  <g opacity="0.85">
+    <!-- bat @24,16 -->
+    <rect x="25" y="17" width="1" height="2" fill="#c084fc"/>
+    <rect x="28" y="17" width="1" height="2" fill="#c084fc"/>
+    <rect x="23" y="19" width="8" height="2" fill="#a855f7"/>
+    <rect x="25" y="21" width="3" height="3" fill="#4c1d95"/>
+    <rect x="26" y="22" width="1" height="1" fill="#22d3ee"/>
+  </g>
+  <g opacity="0.92">
+    <!-- bat @1,21 tiny -->
+    <rect x="3" y="22" width="1" height="1" fill="#a855f7"/>
+    <rect x="6" y="22" width="1" height="1" fill="#a855f7"/>
+    <rect x="2" y="23" width="7" height="1" fill="#7c3aed"/>
+    <rect x="4" y="24" width="3" height="2" fill="#5b21b6"/>
+    <rect x="5" y="25" width="1" height="1" fill="#67e8f9"/>
+  </g>
+  <g opacity="0.87">
+    <!-- bat @12,23 -->
+    <rect x="14" y="24" width="1" height="2" fill="#c084fc"/>
+    <rect x="17" y="24" width="1" height="2" fill="#c084fc"/>
+    <rect x="12" y="26" width="9" height="2" fill="#6d28d9"/>
+    <rect x="15" y="28" width="3" height="2" fill="#3730a3"/>
+    <rect x="15" y="29" width="1" height="1" fill="#22d3ee"/>
+    <rect x="17" y="29" width="1" height="1" fill="#22d3ee"/>
+  </g>
+  <g opacity="0.9">
+    <!-- bat @22,21 -->
+    <rect x="23" y="22" width="1" height="2" fill="#e9d5ff"/>
+    <rect x="26" y="22" width="1" height="2" fill="#e9d5ff"/>
+    <rect x="22" y="24" width="7" height="2" fill="#8b5cf6"/>
+    <rect x="24" y="26" width="3" height="2" fill="#4c1d95"/>
+    <rect x="25" y="27" width="1" height="1" fill="#bae6fd"/>
+  </g>
+  <!-- stray wing tips / silhouette overlap -->
+  <rect x="1" y="10" width="3" height="1" fill="#7c3aed" opacity="0.5"/>
+  <rect x="28" y="11" width="3" height="1" fill="#a855f7" opacity="0.45"/>
+  <rect x="9" y="28" width="4" height="1" fill="#6d28d9" opacity="0.55"/>
+</svg>

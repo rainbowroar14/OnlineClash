@@ -75,6 +75,18 @@
   let cancelQueue = null;
 
   const DECK_STORAGE_KEY = "na_deck_v1";
+  const COLLECTION_ROWS_KEY = "na_collection_rows_v1";
+
+  function readCollectionRowsSetting() {
+    try {
+      const v = localStorage.getItem(COLLECTION_ROWS_KEY);
+      if (v === "0") return false;
+      if (v === "1") return true;
+    } catch {
+      /* ignore */
+    }
+    return true;
+  }
 
   /** @param {typeof window.NightArena} na */
   function loadSavedDeck(na) {
@@ -83,7 +95,13 @@
       const raw = localStorage.getItem(DECK_STORAGE_KEY);
       if (raw) {
         const d = JSON.parse(raw);
-        if (na.validateDeck(d)) return /** @type {string[]} */ (d.slice());
+        if (na.validateDeck(d)) {
+          /** @type {string[]} */
+          const ids = /** @type {string[]} */ (d.slice()).map((c) =>
+            c === "builder" ? "build" : c,
+          );
+          return ids;
+        }
       }
     } catch {
       /* ignore */
@@ -98,7 +116,20 @@
     const row = document.getElementById("deck-slots-row");
     const pool = document.getElementById("deck-pool-grid");
     const btnDef = document.getElementById("btn-deck-default");
+    const chkRows = document.getElementById("deck-collection-rows");
     if (!row || !pool || !btnDef) return;
+
+    if (chkRows) {
+      chkRows.checked = readCollectionRowsSetting();
+      chkRows.addEventListener("change", () => {
+        try {
+          localStorage.setItem(COLLECTION_ROWS_KEY, chkRows.checked ? "1" : "0");
+        } catch {
+          /* ignore */
+        }
+        renderDeckUi();
+      });
+    }
 
     /** @type {(string | null)[]} */
     let deckSlots = loadSavedDeck(na).slice();
@@ -137,22 +168,75 @@
 
       pool.innerHTML = "";
       const allFull = deckSlots.every((x) => x);
+      const useRows = !chkRows || chkRows.checked;
+      pool.classList.toggle("deck-pool-rows", useRows);
+
       for (const id of na.CARD_POOL) {
         const used = deckSlots.includes(id);
         const ui = na.getCardPreview(id);
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "deck-pool-card";
-        b.innerHTML = `<img src="${ui.img}" alt="" width="36" height="36" /><span>${ui.name}</span><span class="cost">${ui.cost}</span>`;
-        b.disabled = used || allFull;
-        b.addEventListener("click", () => {
-          const empty = deckSlots.indexOf(null);
-          if (empty === -1) return;
-          deckSlots[empty] = id;
-          renderDeckUi();
-          saveIfComplete();
-        });
-        pool.appendChild(b);
+        const desc = ui.description != null ? String(ui.description) : "";
+
+        if (useRows) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "deck-pool-row";
+          b.disabled = used || allFull;
+          b.setAttribute("aria-label", `${ui.name}, ${ui.cost} elixir. ${desc}`);
+
+          const thumb = document.createElement("span");
+          thumb.className = "deck-pool-row-thumb";
+          const img = document.createElement("img");
+          img.src = ui.img;
+          img.alt = "";
+          img.width = 40;
+          img.height = 40;
+          thumb.appendChild(img);
+
+          const main = document.createElement("span");
+          main.className = "deck-pool-row-main";
+
+          const title = document.createElement("span");
+          title.className = "deck-pool-row-title";
+          title.appendChild(document.createTextNode(ui.name));
+          const costEl = document.createElement("span");
+          costEl.className = "cost";
+          costEl.textContent = String(ui.cost);
+          title.appendChild(document.createTextNode(" "));
+          title.appendChild(costEl);
+
+          const d = document.createElement("span");
+          d.className = "deck-pool-row-desc";
+          d.textContent = desc;
+
+          main.appendChild(title);
+          main.appendChild(d);
+
+          b.appendChild(thumb);
+          b.appendChild(main);
+
+          b.addEventListener("click", () => {
+            const empty = deckSlots.indexOf(null);
+            if (empty === -1) return;
+            deckSlots[empty] = id;
+            renderDeckUi();
+            saveIfComplete();
+          });
+          pool.appendChild(b);
+        } else {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "deck-pool-card";
+          b.innerHTML = `<img src="${ui.img}" alt="" width="36" height="36" /><span>${ui.name}</span><span class="cost">${ui.cost}</span>`;
+          b.disabled = used || allFull;
+          b.addEventListener("click", () => {
+            const empty = deckSlots.indexOf(null);
+            if (empty === -1) return;
+            deckSlots[empty] = id;
+            renderDeckUi();
+            saveIfComplete();
+          });
+          pool.appendChild(b);
+        }
       }
     }
 

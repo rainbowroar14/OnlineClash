@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bHammer" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="4" fill="#14532d"/>
+  <!-- face + claw -->
+  <rect x="4" y="10" width="17" height="8" rx="1.2" fill="url(#bHammer)" stroke="#334155" stroke-width="0.65"/>
+  <path d="M21 12 L26 11 L26 17 L21 16 Z" fill="#94a3b8" stroke="#475569" stroke-width="0.55"/>
+  <!-- angled handle -->
+  <path d="M19 18 L22 30 L26 29 L21 17 Z" fill="#92400e" stroke="#713f12" stroke-width="0.55"/>
+  <!-- nails (3) -->
+  <line x1="24" y1="20" x2="28" y2="26" stroke="#cbd5e1" stroke-width="1.35" stroke-linecap="round"/>
+  <circle cx="28.2" cy="26.8" r="1.35" fill="#94a3b8"/>
+  <line x1="26" y1="22" x2="29.8" y2="28.2" stroke="#cbd5e1" stroke-width="1.35" stroke-linecap="round"/>
+  <circle cx="30.1" cy="28.7" r="1.35" fill="#94a3b8"/>
+  <line x1="27" y1="25" x2="30.2" y2="30.8" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
+  <circle cx="30.5" cy="31" r="1.25" fill="#94a3b8"/>
+</svg>

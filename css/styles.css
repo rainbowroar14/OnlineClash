@@ -162,10 +162,26 @@ body {
 }
 
 .deck-next-preview {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
+}
+
+.deck-next-wrap.card-next-has-evo .deck-next-preview::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #ecfeff 0%, #06b6d4 45%, #0e7490 100%);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.9);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .deck-next-preview img {
@@ -295,6 +311,22 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(217, 70, 239, 0.45);
+}
+
+/* Evo indicator (cyan gem) — first implementation: Bomber Evo */
+.card.card-has-evo::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #ecfeff 0%, #06b6d4 45%, #0e7490 100%);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.88);
+  pointer-events: none;
+  z-index: 3;
 }
 
 .card:hover:not(:disabled) {
@@ -543,12 +575,120 @@ body {
   color: var(--elixir);
 }
 
+.deck-pool-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.deck-pool-toolbar .deck-pool-label {
+  margin-bottom: 0;
+}
+
+.deck-collection-setting {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.deck-collection-setting input {
+  accent-color: var(--elixir);
+}
+
 .deck-pool-label {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--muted);
   margin-bottom: 0.45rem;
+}
+
+.deck-pool-grid.deck-pool-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  max-height: min(58vh, 480px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.deck-pool-row {
+  appearance: none;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.42rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.deck-pool-row:hover:not(:disabled) {
+  border-color: var(--elixir);
+}
+
+.deck-pool-row:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.deck-pool-row-thumb {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.deck-pool-row-thumb img {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+.deck-pool-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.deck-pool-row-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+.deck-pool-row-title .cost {
+  color: var(--elixir);
+  font-weight: 800;
+  margin-left: 0.2rem;
+}
+
+.deck-pool-row-desc {
+  font-size: 0.69rem;
+  line-height: 1.42;
+  color: var(--muted);
 }
 
 .deck-pool-grid {

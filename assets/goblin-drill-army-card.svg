@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="gdaBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1410"/>
+      <stop offset="100%" stop-color="#292524"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="4" fill="url(#gdaBg)"/>
+  <!-- six drills in a ring -->
+  <g fill="#92400e" stroke="#451a03" stroke-width="0.6">
+    <ellipse cx="16" cy="10" rx="3.2" ry="2.2"/>
+    <ellipse cx="23" cy="13" rx="3.2" ry="2.2"/>
+    <ellipse cx="23" cy="20" rx="3.2" ry="2.2"/>
+    <ellipse cx="16" cy="23" rx="3.2" ry="2.2"/>
+    <ellipse cx="9" cy="20" rx="3.2" ry="2.2"/>
+    <ellipse cx="9" cy="13" rx="3.2" ry="2.2"/>
+  </g>
+  <ellipse cx="16" cy="16.5" rx="4.5" ry="3.2" fill="#1c1917" opacity="0.85"/>
+  <g stroke="#f59e0b" stroke-width="1" stroke-opacity="0.75" stroke-linecap="round" fill="none">
+    <line x1="16" y1="16.5" x2="28" y2="7"/>
+    <line x1="16" y1="16.5" x2="4" y2="25"/>
+    <line x1="16" y1="16.5" x2="28" y2="25"/>
+  </g>
+  <text x="16" y="9" text-anchor="middle" font-family="system-ui,sans-serif" font-size="7" font-weight="700" fill="#fbbf24">x6</text>
+</svg>

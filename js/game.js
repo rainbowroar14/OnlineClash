@@ -26,6 +26,14 @@
 
   const MINI_PEKKA_COST = 4;
   const KNIGHT_COST = 3;
+  /** Ground assassin — only fights enemy ground troops; arena towers ignore him. */
+  const ASSASSIN_COST = 12;
+  /** Seconds of movement toward a foe before purple charge (2× speed, next hit 2× damage). */
+  const ASSASSIN_CHARGE_PREP_SEC = 1;
+  const ASSASSIN_CHARGE_SPEED_MUL = 2;
+  /** Melee splash: nearby enemy ground troops take this fraction of the strike (primary gets full hit). */
+  const ASSASSIN_SPLASH_RADIUS = 24;
+  const ASSASSIN_SPLASH_FRACTION = 0.5;
   /** Meme melee: fast, huge sprite, very high hit-rate DPS. */
   const TUNG_SAHUR_COST = 10;
   const TUNG_SAHUR_HP = 200;
@@ -34,8 +42,8 @@
   const ATTACK_INTERVAL_TUNG_SAHUR = 1 / 50;
   const TUNG_SAHUR_DEATH_BLAST_RADIUS = 122;
   const TUNG_SAHUR_DEATH_BLAST_DMG = 750;
-  /** Heavenly Tung: death → pause → rally → charge → red lasers (3s) → nuke + 5 Tung Sahur (or early if no targets). */
-  const HEAVENLY_TUNG_COST = 30;
+  /** Heavenly Tung: death → pause → rally → charge → red lasers (3s) → nuke + 12 Tung Sahur, 3 Mega Goblin Army, 1 Heavenly Tung (or early if no targets). */
+  const HEAVENLY_TUNG_COST = 50;
   const HEAVENLY_TUNG_PAUSE_SEC = 1;
   const HEAVENLY_TUNG_CHARGE_SEC = 3;
   const HEAVENLY_TUNG_CHARGE_MAX_R = 92;
@@ -46,6 +54,11 @@
   const HEAVENLY_TUNG_NUKE_RADIUS = 268;
   const HEAVENLY_TUNG_NUKE_DMG = 2200;
   const HEAVENLY_TUNG_NUKE_FX_SEC = 2.35;
+  /** Victory finale spawn counts / layout radii (px from nuke center). */
+  const HEAVENLY_TUNG_FINALE_TUNG_SAHUR_COUNT = 12;
+  const HEAVENLY_TUNG_FINALE_TUNG_RING_R = 34;
+  const HEAVENLY_TUNG_FINALE_MEGA_GOBLIN_ARMY_COUNT = 3;
+  const HEAVENLY_TUNG_FINALE_MGA_RING_R = 78;
   /** Spawns 3; each becomes an untargetable ghost at 0 HP until all 3 are ghosts, then the squad is removed. */
   const BIR_BIR_PATAPINS_COST = 7;
   const BIR_PATAPIN_HP = 120;
@@ -56,9 +69,18 @@
   const GOBLINS_COST = 3;
   const GOBLIN_GANG_COST = 5;
   const CHUD_COST = 6;
-  const ARCHERS_COST = 2;
+  const ARCHERS_COST = 3;
+  /** Archers card: spawns this many `archer` troops. */
+  const ARCHERS_PER_CARD = 4;
+  /** Skarmy spawn count — Archers Army uses the same swarm layout. */
+  const SKARMY_SPAWN_COUNT = 15;
+  const ARCHERS_ARMY_COST = 8;
   const SPEAR_GOBLINS_COST = 2;
   const SKARMY_COST = 3.5;
+  /** Skeleton Army formation — swarm of bats. */
+  const BAT_ARMY_COST = 6;
+  /** Mega Knight × Skarmy count — chaotic jump spam. */
+  const MEGA_KNIGHT_ARMY_COST = 40;
   const MEGA_ARMY_COST = 13;
   /** Mega Army: skeletons + shielded guards (shield HP, overflow wasted when it breaks) + one witch. */
   const MEGA_ARMY_GUARD_COUNT = 10;
@@ -71,12 +93,42 @@
   const FIREBALL_SPELL_DMG = ARROWS_SPELL_DMG * 2.5;
   const FIREBALL_TOWER_DMG = FIREBALL_SPELL_DMG * 0.5;
   const FIREBALL_SPELL_RADIUS = ARROWS_SPELL_RADIUS * (2 / 3);
+  /** Airborne bomber: mini Fireballs — ½ spell damage vs Fireball; splash = ½ Fireball footprint (doubled vs old tiny bombs). */
+  const BOBERDINO_CROCODELO_COST = 9;
+  const BOBERDINO_HP = 1000;
+  const BOBERDINO_SPEED = 20;
+  const BOBERDINO_BOMB_INTERVAL_SEC = 1.2;
+  const BOBERDINO_BOMB_SPELL_DMG = FIREBALL_SPELL_DMG * 0.5;
+  const BOBERDINO_BOMB_TOWER_DMG = FIREBALL_TOWER_DMG * 0.5;
+  const BOBERDINO_BOMB_RADIUS = FIREBALL_SPELL_RADIUS * 0.5;
+  /** Close enough to tower center to orbit and bomb. */
+  const BOBERDINO_HOVER_DIST = 46;
+  /** Ground impact lands this far below plane (bombs drop “under” the fuselage). */
+  const BOBERDINO_BOMB_DROP_OFFSET_Y = 22;
+  /** Traveling AoE: third of Fireball radius; troop/building dmg = Fireball troop dmg × 5 × 0.8 (−20% from prior). */
+  const ROCKET_COST = 12;
+  const ROCKET_SPELL_RADIUS = FIREBALL_SPELL_RADIUS / 3;
+  const ROCKET_SPELL_DMG = FIREBALL_SPELL_DMG * 5 * 0.8;
+  const ROCKET_TOWER_DMG = ROCKET_SPELL_DMG * 0.5;
 
   const GOBLIN_HUT_COST = 4;
+  /** Burrows from your king to enemy grass, then spawns melee Goblins (Clash-style). */
+  const GOBLIN_DRILL_COST = 6.5;
+  const GOBLIN_DRILL_HP = 720;
+  const GOBLIN_DRILL_TRAVEL_SEC = 1.05;
+  const GOBLIN_DRILL_SPAWN_INTERVAL = 2;
+  const MAX_DRILL_GOBLINS = 6;
+  /** Repairs allied spawned buildings (+HP each hit, capped) in {@link ARROWS_SPELL_RADIUS}. */
+  const BUILD_SPELL_COST = 3;
+  const BUILD_SPELL_HEAL = 500;
   const GOBLIN_HUT_HP = 680;
   /** Building “timer”: HP ticks down at this rate until the hut collapses (CR-style lifetime). */
   const GOBLIN_HUT_LIFETIME_SEC = 30;
   const GOBLIN_HUT_DECAY_PER_SEC = GOBLIN_HUT_HP / GOBLIN_HUT_LIFETIME_SEC;
+  const GOBLIN_DRILL_DECAY_PER_SEC = ((GOBLIN_DRILL_HP / GOBLIN_HUT_LIFETIME_SEC) * 2);
+  /** Six simultaneous tunnel ends from one tap (from your king each). */
+  const GOBLIN_DRILL_ARMY_COST = 25;
+  const GOBLIN_DRILL_ARMY_COUNT = 6;
   /** Seconds between spawns while a foe is inside the hut’s trigger ring. */
   const HUT_SPAWN_INTERVAL = 2;
   /** Spear spawns from Mega Goblin Army troop (hut ring). */
@@ -99,6 +151,14 @@
   /** Freeze zone lasts this long; enemies inside are stunned for the duration (re-applied each tick). */
   const FREEZE_DURATION_SEC = 4;
 
+  const RAGE_SPELL_COST = 5;
+  /** Allies buffed — enemies (troops, towers, buildings) struck for damage once. Same footprint as Zap. */
+  const RAGE_SPELL_RADIUS = ZAP_SPELL_RADIUS;
+  const RAGE_SPELL_DMG = 60;
+  const RAGE_BUFF_DURATION_SEC = 3;
+  /** 50% faster move speed and melee/ranged cooldowns (+ attack pose timer). */
+  const RAGE_MOVE_ATK_MUL = 1.5;
+
   const TOMBSTONE_COST = 3;
   const TOMBSTONE_HP = 300;
   const TOMBSTONE_LIFETIME_SEC = 20;
@@ -119,42 +179,80 @@
   /** Garrison tower: 150 HP decays over 60s; one friendly troop deployed on it hides inside until the tower dies. */
   const GARRISON_TOWER_COST = 4;
   const GARRISON_TOWER_HP = 150;
+  /** Nominal full-drain time before decay tuning (used for copy / balance). */
   const GARRISON_TOWER_LIFETIME_SEC = 60;
-  const GARRISON_TOWER_DECAY_PER_SEC = GARRISON_TOWER_HP / GARRISON_TOWER_LIFETIME_SEC;
+  /** HP drain rate vs baseline (1.3 = 30% faster empty-to-zero at full HP). */
+  const GARRISON_TOWER_DECAY_SPEED_MUL = 1.3;
+  const GARRISON_TOWER_DECAY_PER_SEC =
+    (GARRISON_TOWER_HP / GARRISON_TOWER_LIFETIME_SEC) * GARRISON_TOWER_DECAY_SPEED_MUL;
 
-  /** Beyond melee “reach”, hard lock breaks (target kited away). */
+  /** Like Garrison Tower: troops hide inside (untargetable, shoot out) — no HP decay; holds two. */
+  const LUXURY_HOTEL_COST = 13;
+  const LUXURY_HOTEL_HP = 500;
+
+  /** Beyond melee “reach”, hard lock breaks (target kites away). */
   const LOCK_LEASH_EXTRA = 12;
+
+  /** Buffs friendly troops — radius ½× Arrows splash. */
+  const SHIELDS_SPELL_COST = 4;
+  const SHIELDS_SPELL_RADIUS = ARROWS_SPELL_RADIUS * 0.5;
+  /** Applied by Shield spell and Mirror copies — overflow from the breaking hit is wasted (no chip to HP). */
+  const GENERIC_SHIELD_BUFF_HP = 60;
+  /** Mirror: +1 elixir over YOUR side’s previous deploy (per side — not opponent’s plays). */
+  const MIRROR_EXTRA_ELIXIR = 1;
+  /** Play for 0 elixir — cycles the hand only; nothing is placed. */
+  const NOTHING_COST = 0;
+  /** Flavor — still no units/buildings/spells spawned. */
+  const NOTHING_ARMY_COUNT = 15;
 
   /** All implemented card ids (deck builder + validation). */
   const ALL_CARD_IDS = [
     "mini_pekka",
     "knight",
+    "assassin",
     "skeleton",
     "bomber",
     "goblins",
     "archers",
     "spear_goblins",
+    "archers_army",
     "goblin_gang",
     "chud",
     "skarmy",
+    "bat_army",
     "mega_army",
     "arrows",
     "fireball",
+    "goblin_barrel",
+    "rocket",
     "freeze",
     "goblin_hut",
     "cannon",
     "garrison_tower",
+    "luxury_hotel",
     "mega_goblin_army",
+    "goblin_drill",
+    "goblin_drill_army",
+    "build",
     "zap",
     "wizard",
     "electro_wizard",
     "tombstone",
     "mega_knight",
+    "mega_knight_army",
     "musketeer",
     "tung_tung_tung_sahur",
     "heavenly_tung",
     "bir_bir_patapins",
     "witch",
+    "bats",
+    "prince_tower",
+    "boberdino_crocodelo",
+    "mirror",
+    "shields",
+    "rage",
+    "nothing",
+    "nothing_army",
   ];
 
   /**
@@ -171,13 +269,15 @@
     "goblin_hut",
   ];
 
-  const MINI_HP = 400;
-  const MINI_DMG = 350;
+  const MINI_PEKKA_REF_HP = 400;
+  const MINI_PEKKA_REF_DMG = 350;
+  const MINI_HP = Math.round(MINI_PEKKA_REF_HP * 1.2);
+  const MINI_DMG = Math.round(MINI_PEKKA_REF_DMG * 1.2);
   const SPEED_MINI_PEKKA = 25;
 
   const WIZARD_COST = 5;
-  const WIZARD_HP = Math.round((MINI_HP * 2) / 3 / 2);
-  const WIZARD_DMG = MINI_DMG / 2;
+  const WIZARD_HP = Math.round(((MINI_PEKKA_REF_HP * 2) / 3 / 2) * 1.5);
+  const WIZARD_DMG = MINI_PEKKA_REF_DMG / 2;
   const WIZARD_RANGE = 92;
   const SPEED_WIZARD = 26;
   const ATTACK_INTERVAL_WIZARD = 1.45;
@@ -219,13 +319,22 @@
   const BOMBER_HP = 150;
   const BOMBER_SPLASH_DMG = 150;
   const BOMBER_SPLASH_RADIUS = 30;
+  /** Splash lands this far past the locked target along the bomb’s flight — deeper into clumps. */
+  const BOMBER_SPLASH_AIM_PAST = 14;
+  /** Projectile flies at PROJ_SPEED × this (30% slower than standard ranged bolts). */
+  const BOMBER_PROJ_SPEED_SCALE = 0.7;
+  /** Evo Bomber only: after the first splash on impact, follow-up splashes while the bomb keeps moving — spaced by this interval. */
+  const BOMBER_CHAIN_STEP_SEC = 0.3;
+  const BOMBER_CHAIN_FOLLOW_UP_COUNT = 3;
   const SPEED_BOMBER = SPEED_SKELETON;
   const BOMBER_RANGE = 90;
   const ATTACK_INTERVAL_BOMBER = 1.85;
+  /** Evo Bomber: ~28% faster throws than standard. */
+  const ATTACK_INTERVAL_BOMBER_EVO = ATTACK_INTERVAL_BOMBER * 0.72;
 
   const ARCHER_HP = 35;
   /** Melee goblin (Goblins / Goblin Gang): same cadence as skeletons, 1.3× skeleton slash. */
-  const GOBLIN_HP = 75;
+  const GOBLIN_HP = Math.round(75 * 0.8);
   const GOBLIN_DMG = SKELETON_DMG * 1.3;
   const SPEED_GOBLIN = 27;
   /** Spear Goblins + hut spawns: 3 slower than melee goblins. */
@@ -237,6 +346,11 @@
   const ATTACK_INTERVAL_CHUD = 1.55;
   const CHUD_MELEE_RANGE = 28;
   const CHUD_RADIUS = 14;
+  /** Evo Chud (every other deploy per side): shockwave every this many seconds. */
+  const CHUD_EVO_PULSE_SEC = 2;
+  const CHUD_EVO_PULSE_DMG = 100;
+  const CHUD_EVO_PULSE_RADIUS = 80;
+  const CHUD_EVO_KNOCK_DIST = 24;
   /** Chud-style troop (towers only) with hut head; 5 melee goblins on death. */
   const MEGA_GOBLIN_ARMY_COST = 15;
   const MEGA_GOBLIN_ARMY_HP = GOBLIN_HUT_HP + CHUD_HP;
@@ -249,7 +363,7 @@
   const MUSKETEER_COST = 4;
   const MUSKETEER_HP = 270;
   const MUSKETEER_SHOT_DMG = 100;
-  const MUSKETEER_RANGE = 92 * 1.5;
+  const MUSKETEER_RANGE = 92 * 1.5 * 1.2;
   const SPEED_MUSKETEER = 24;
   const ATTACK_INTERVAL_MUSKETEER = 1.1 * 2;
 
@@ -277,7 +391,7 @@
   /** Native art: 16×16 heavy troops, 12×12 light troops; scaled when drawn. */
   const DRAW_PX_UNIT = 32;
   const DRAW_PX_SKEL = 16;
-  const MAX_ELIXIR = 30;
+  const MAX_ELIXIR = 50;
   const ELIXIR_PER_SEC = 1 / 2.75;
   const DEPLOY_DELAY_SEC = 0.4;
   /** PvP regulation length (seconds); then tiebreak or winner by crowns. */
@@ -295,6 +409,9 @@
 
   const PROJ_SPEED = 300;
   const FIREBALL_PROJ_SPEED = 265;
+
+  /** Flies like Fireball — no impact damage; spills 3 melee goblins (same offsets as Goblins card). */
+  const GOBLIN_BARREL_COST = 3;
   const PROJ_RADIUS = 5;
   /** Extra reach so melee connects reliably once you’re on a target. */
   const MELEE_REACH_BONUS = 6;
@@ -314,6 +431,18 @@
   const PRINCESS_FIRE = 1.12;
   const KING_FIRE = 0.72;
 
+  const BATS_COST = 2;
+  const BAT_HP = 1;
+  /** Three quarters of skeleton slash damage per hit. */
+  const BAT_DMG = SKELETON_DMG * 0.75;
+  const BAT_COUNT = 5;
+  const SPEED_BAT = SPEED_SKELETON + 8;
+  const BAT_MELEE_RANGE = 14;
+
+  /** Placeable princess-style shooter — half princess HP, no lifetime drain. */
+  const PRINCE_TOWER_COST = 10;
+  const PRINCE_PLACEABLE_HP = PRINCESS_TOWER_HP / 2;
+
   const SPRITES = {
     miniWalk: /** @type {HTMLImageElement[]} */ ([]),
     knightWalk: /** @type {HTMLImageElement[]} */ ([]),
@@ -327,6 +456,7 @@
     musketeerWalk: /** @type {HTMLImageElement[]} */ ([]),
     megaKnightWalk: /** @type {HTMLImageElement[]} */ ([]),
     chudWalk: /** @type {HTMLImageElement[]} */ ([]),
+    batWalk: /** @type {HTMLImageElement[]} */ ([]),
     tungSahur: new Image(),
     heavenlyTung: new Image(),
     birPatapin: new Image(),
@@ -334,6 +464,7 @@
     towerPrincess: new Image(),
     towerKing: new Image(),
     bridge: new Image(),
+    boberdinoCrocodelo: new Image(),
   };
 
   function loadWalkFrames(folder, base, targetArr) {
@@ -355,6 +486,7 @@
   loadWalkFrames("assets", "musketeer", SPRITES.musketeerWalk);
   loadWalkFrames("assets", "mega-knight", SPRITES.megaKnightWalk);
   loadWalkFrames("assets", "chud", SPRITES.chudWalk);
+  loadWalkFrames("assets", "bat", SPRITES.batWalk);
   SPRITES.tungSahur.src = "assets/tung-tung-tung-sahur.png";
   SPRITES.heavenlyTung.src = "assets/heavenly-tung.png";
   SPRITES.birPatapin.src = "assets/bir-bir-patapins-v2.png";
@@ -362,12 +494,41 @@
   SPRITES.towerPrincess.src = "assets/tower-princess.svg";
   SPRITES.towerKing.src = "assets/tower-king.svg";
   SPRITES.bridge.src = "assets/bridge.svg";
+  SPRITES.boberdinoCrocodelo.src = "assets/boberdino-crocodelo-card.png";
 
   const stateRef = { current: /** @type {null | object} */ (null) };
   const testingPanelSync = { fn: /** @type {null | (() => void)} */ (null) };
 
   function walkFrameIndex(state) {
     return Math.floor((state.time / WALK_LOOP_SEC) * WALK_FRAME_COUNT) % WALK_FRAME_COUNT;
+  }
+
+  /** Faster walk cycle while assassin is in purple charge. */
+  function walkFrameIndexForTroop(state, u) {
+    if (u.type === "assassin" && u.assassinCharging) {
+      return Math.floor((state.time / WALK_LOOP_SEC) * WALK_FRAME_COUNT * 2) % WALK_FRAME_COUNT;
+    }
+    return walkFrameIndex(state);
+  }
+
+  function updateAssassinChargeWindup(dt, troop, state, moved) {
+    if (troop.type !== "assassin") return;
+    if (troopStunned(troop, state.time)) {
+      troop.assassinCharging = false;
+      troop.assassinWindupSec = 0;
+      return;
+    }
+    if (troop.assassinCharging) return;
+    const ct = resolveCombatPick(troop, state);
+    if (ct && ct.kind === "troop" && moved) {
+      troop.assassinWindupSec = (troop.assassinWindupSec || 0) + dt;
+    } else {
+      troop.assassinWindupSec = 0;
+    }
+    if (troop.assassinWindupSec >= ASSASSIN_CHARGE_PREP_SEC) {
+      troop.assassinCharging = true;
+      troop.assassinWindupSec = 0;
+    }
   }
 
   function dist(ax, ay, bx, by) {
@@ -489,7 +650,11 @@
    * not "troops always win over buildings."
    */
   function pickCombatTarget(troop, state) {
-    if (troop.type === "chud" || troop.type === "mega_goblin_army") {
+    if (
+      troop.type === "chud" ||
+      troop.type === "mega_goblin_army" ||
+      troop.type === "boberdino_crocodelo"
+    ) {
       let bestD = Infinity;
       /** @type {{ kind: "tower"; tower: (typeof state.towers)[0] } | null} */
       let pick = null;
@@ -503,6 +668,25 @@
       return pick;
     }
 
+    if (troop.type === "assassin") {
+      let bestD = Infinity;
+      /** @type {{ kind: "troop"; troop: (typeof state.troops)[0] } | null} */
+      let pick = null;
+      for (const u of state.troops) {
+        if (u === troop || u.side === troop.side) continue;
+        if (heavenlyTungRageActive(u)) continue;
+        if (u.hp <= 0) continue;
+        if (isFlyingTroop(u)) continue;
+        if (troopInsideGarrisonAlive(u, state)) continue;
+        const d = dist(troop.x, troop.y, u.x, u.y);
+        if (d < bestD) {
+          bestD = d;
+          pick = { kind: "troop", troop: u };
+        }
+      }
+      return pick;
+    }
+
     let bestD = Infinity;
     /** @type {{ kind: "troop"; troop: typeof state.troops[0] } | { kind: "tower"; tower: (typeof state.towers)[0] } | { kind: "building"; building: (typeof state.buildings)[0] } | null} */
     let pick = null;
@@ -511,6 +695,7 @@
       if (u === troop || u.side === troop.side) continue;
       if (heavenlyTungRageActive(u)) continue;
       if (u.hp <= 0) continue;
+      if (!canAttackerFightEnemyTroop(troop, u)) continue;
       if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(troop.x, troop.y, u.x, u.y);
       if (d < bestD) {
@@ -558,10 +743,54 @@
     return !!(t && t.type === "heavenly_tung" && t.heavenlyRageActive === true);
   }
 
+  /** @param {string | undefined} kind */
+  function isGarrisonLikeKind(kind) {
+    return kind === "garrison_tower" || kind === "luxury_hotel";
+  }
+
+  /** @param {{ kind: string; garrisonTroopId?: null | string; garrisonTroopId2?: null | string }} bd */
+  function garrisonFilledCount(bd) {
+    let n = 0;
+    if (bd.garrisonTroopId) n++;
+    if (bd.garrisonTroopId2) n++;
+    return n;
+  }
+
+  /** @param {{ kind: string; garrisonTroopId?: null | string; garrisonTroopId2?: null | string }} bd */
+  function garrisonCapacityForBuilding(bd) {
+    if (bd.kind === "luxury_hotel") return 2;
+    if (bd.kind === "garrison_tower") return 1;
+    return 0;
+  }
+
+  /** @param {{ kind: string; garrisonTroopId?: null | string; garrisonTroopId2?: null | string }} bd */
+  function hasOpenGarrisonSlot(bd) {
+    return garrisonFilledCount(bd) < garrisonCapacityForBuilding(bd);
+  }
+
+  /** @returns {boolean} */
+  function assignGarrisonTroopToBuilding(bd, troopId) {
+    if (!bd.garrisonTroopId) {
+      bd.garrisonTroopId = troopId;
+      return true;
+    }
+    if (bd.kind === "luxury_hotel" && !bd.garrisonTroopId2) {
+      bd.garrisonTroopId2 = troopId;
+      return true;
+    }
+    return false;
+  }
+
+  /** @param {{ garrisonTroopId?: null | string; garrisonTroopId2?: null | string }} bd */
+  function clearTroopGarrisonSlots(bd, troopId) {
+    if (bd.garrisonTroopId === troopId) bd.garrisonTroopId = null;
+    if (bd.garrisonTroopId2 === troopId) bd.garrisonTroopId2 = null;
+  }
+
   function troopInsideGarrisonAlive(troop, state) {
     if (!troop || !troop.garrisonBuildingId || !state) return false;
     const bd = (state.buildings || []).find((b) => b.id === troop.garrisonBuildingId);
-    return !!(bd && bd.hp > 0 && bd.kind === "garrison_tower");
+    return !!(bd && bd.hp > 0 && isGarrisonLikeKind(bd.kind));
   }
 
   /** Walking, melee, and facing (patapin ghosts keep fighting at 0 HP until the trio wipes). */
@@ -609,13 +838,34 @@
     );
   }
 
-  /** Skeleton / Goblin: no first-hit wind-up, interval-only melee cadence. */
+  function isFlyingTroop(u) {
+    return !!(u && u.flying);
+  }
+
+  /**
+   * Airborne troops are ignored by ground melee / bomber bombs; other flyers, ranged bolts, Mega Knight splashes/jump, towers, sparks, spells still hit them.
+   * @returns {boolean} false iff target is airborne and attacker cannot hurt it.
+   */
+  function canAttackerFightEnemyTroop(attacker, enemy) {
+    if (!enemy || !isFlyingTroop(enemy)) return true;
+    if (isFlyingTroop(attacker)) return true;
+    if (attacker.type === "mega_knight") return true;
+    if (isRangedTroopType(attacker)) return attacker.type !== "bomber";
+    return false;
+  }
+
+  /** Skeleton / Goblin / Bat: no first-hit wind-up, interval-only melee cadence. */
   function isFastMeleeSwarmType(troop) {
-    return troop.type === "skeleton" || troop.type === "skeleton_guard" || troop.type === "goblin";
+    return troop.type === "skeleton" || troop.type === "skeleton_guard" || troop.type === "goblin" || troop.type === "bat";
   }
 
   function playerInfiniteElixir(state) {
     return state.matchMode === "training" && !!state.testing && state.testing.infiniteElixir === true;
+  }
+
+  /** Training sandbox: arena princess + king towers take no damage (still does not resurrect fallen towers). */
+  function trainingInfiniteTowerHp(state) {
+    return state.matchMode === "training" && !!state.testing && state.testing.infiniteTowerHp === true;
   }
 
   /** Side your cards/elixir control: bottom (player) or top (enemy). Battle mode is always player. */
@@ -704,6 +954,10 @@
         clearTroopAggro(troop);
         return null;
       }
+      if (!canAttackerFightEnemyTroop(troop, u)) {
+        clearTroopAggro(troop);
+        return null;
+      }
       return { kind: "troop", troop: u };
     }
     if (troop.aggroKind === "tower") {
@@ -741,12 +995,18 @@
     if (troop.combatLocked) {
       const locked = tryResolveTroopAggro(troop, state);
       if (locked) {
-        const still = isRangedTroopType(troop)
-          ? rangedEngagementInRange(troop, locked)
-          : aggroTargetInMeleeEngageRange(troop, locked);
-        if (still) return locked;
+        if (locked.kind === "troop" && !canAttackerFightEnemyTroop(troop, locked.troop)) {
+          clearTroopAggro(troop);
+        } else {
+          const still = isRangedTroopType(troop)
+            ? rangedEngagementInRange(troop, locked)
+            : aggroTargetInMeleeEngageRange(troop, locked);
+          if (still) return locked;
+          clearTroopAggro(troop);
+        }
+      } else {
+        clearTroopAggro(troop);
       }
-      clearTroopAggro(troop);
     }
 
     const pick = pickCombatTarget(troop, state);
@@ -931,6 +1191,12 @@
           const b = troops[j];
           if (!troopActsOnBattlefield(b)) continue;
           if (heavenlyTungRageActive(b)) continue;
+          if (
+            (a.type === "boberdino_crocodelo" && !b.flying) ||
+            (b.type === "boberdino_crocodelo" && !a.flying)
+          ) {
+            continue;
+          }
           const minD = a.radius + b.radius + padding;
           const d = dist(a.x, a.y, b.x, b.y);
           if (d >= minD || d < 1e-4) continue;
@@ -1002,26 +1268,65 @@
 
   function applyTowerDamage(state, tower, amount) {
     if (tower.hp <= 0 || amount <= 0) return;
-    tower.hp -= amount;
+    if (trainingInfiniteTowerHp(state)) return;
+    let rem = amount;
+    const sh = tower.shieldHp;
+    if (sh != null && sh > 0) {
+      if (rem >= sh) {
+        delete tower.shieldHp;
+        delete tower.shieldMax;
+        return;
+      }
+      tower.shieldHp -= rem;
+      return;
+    }
+    tower.hp -= rem;
     if (tower.hp < 0) tower.hp = 0;
     if (tower.hp <= 0) registerTowerFall(state, tower);
   }
 
   function applyBuildingDamage(state, b, amount) {
     if (b.hp <= 0 || amount <= 0) return;
-    b.hp -= amount;
+    let rem = amount;
+    const sh = b.shieldHp;
+    if (sh != null && sh > 0) {
+      if (rem >= sh) {
+        delete b.shieldHp;
+        delete b.shieldMax;
+        return;
+      }
+      b.shieldHp -= rem;
+      return;
+    }
+    b.hp -= rem;
     if (b.hp < 0) b.hp = 0;
     if (b.hp <= 0) {
-      if (b.kind === "garrison_tower" && b.garrisonTroopId) {
-        const gt = state.troops.find((t) => t.id === b.garrisonTroopId);
-        if (gt) releaseTroopFromGarrison(state, gt, b);
+      if (isGarrisonLikeKind(b.kind) && (b.garrisonTroopId || b.garrisonTroopId2)) {
+        const ids = [];
+        if (b.garrisonTroopId) ids.push(b.garrisonTroopId);
+        if (b.garrisonTroopId2) ids.push(b.garrisonTroopId2);
+        for (const tid of ids) {
+          const gt = state.troops.find((t) => t.id === tid);
+          if (gt) releaseTroopFromGarrison(state, gt, b);
+        }
         b.garrisonTroopId = null;
+        b.garrisonTroopId2 = null;
       }
       if (b.kind === "tombstone" && !b.tombDeathSpawned) {
         b.tombDeathSpawned = true;
         spawnSkeletonsFromTombstoneSite(state, b, TOMBSTONE_SKELS_ON_DEATH);
       }
+      if (b.kind === "goblin_drill" && !b.drillDeathSpawned) {
+        b.drillDeathSpawned = true;
+        spawnGoblinsOnDrillDeath(state, b, 2);
+      }
     }
+  }
+
+  /** Positive-only heal for spawned buildings (huts, drills, cannon, …). Ignores shields — structure HP only. */
+  function applyBuildingHealFlat(state, b, amt) {
+    if (!b || b.hp <= 0 || amt <= 0 || !Number.isFinite(amt)) return;
+    b.hp = Math.min(b.maxHp, b.hp + amt);
   }
 
   /** Shield absorbs first; the hit that breaks shield wastes overflow (no HP chip). Then becomes a skeleton. */
@@ -1066,12 +1371,25 @@
     const stG = stateRef.current;
     if (stG && troopInsideGarrisonAlive(troop, stG)) return;
     if (troop.hp <= 0) return;
+    if (
+      stG &&
+      stG.matchMode === "training" &&
+      stG.testing &&
+      stG.testing.invincibleTroops &&
+      troop.side === humanControlSide(stG)
+    ) {
+      return;
+    }
     if (patapinGhostActive(troop)) return;
     const sh = troop.shieldHp;
     if (sh != null && sh > 0) {
       if (amount >= sh) {
-        troop.shieldHp = 0;
-        convertSkeletonGuardToSkeleton(troop);
+        if (troop.type === "skeleton_guard") {
+          convertSkeletonGuardToSkeleton(troop);
+          return;
+        }
+        delete troop.shieldHp;
+        delete troop.shieldMax;
         return;
       }
       troop.shieldHp -= amount;
@@ -1167,6 +1485,7 @@
 
   function triggerHeavenlyTungVictoryFinale(state, troop) {
     if (!state || !troop || troop.type !== "heavenly_tung") return;
+    const prevTroopLen = state.troops.length;
     const cx = troop.x;
     const cy = troop.y;
     const side = troop.side;
@@ -1179,14 +1498,12 @@
       kind: "heavenly_nuke",
     });
     const faceY = side === "player" ? -1 : 1;
-    const offs = [
-      [0, 0],
-      [-16, 7],
-      [16, 7],
-      [-12, -10],
-      [12, -10],
-    ];
-    for (const [ox, oy] of offs) {
+    const nTung = HEAVENLY_TUNG_FINALE_TUNG_SAHUR_COUNT;
+    const rTung = HEAVENLY_TUNG_FINALE_TUNG_RING_R;
+    for (let i = 0; i < nTung; i++) {
+      const ang = (i / nTung) * Math.PI * 2;
+      const ox = Math.cos(ang) * rTung;
+      const oy = Math.sin(ang) * rTung;
       createTroop(
         side,
         "tung_tung_tung_sahur",
@@ -1195,6 +1512,22 @@
         state,
       );
     }
+    const nMga = HEAVENLY_TUNG_FINALE_MEGA_GOBLIN_ARMY_COUNT;
+    const rMga = HEAVENLY_TUNG_FINALE_MGA_RING_R;
+    for (let i = 0; i < nMga; i++) {
+      const ang = (i / nMga) * Math.PI * 2 + Math.PI / 6;
+      const ox = Math.cos(ang) * rMga;
+      const oy = Math.sin(ang) * rMga;
+      createTroop(
+        side,
+        "mega_goblin_army",
+        clamp(cx + ox, 14, W - 14),
+        clamp(cy + oy * faceY, 14, H - 14),
+        state,
+      );
+    }
+    createTroop(side, "heavenly_tung", clamp(cx, 14, W - 14), clamp(cy + 44 * faceY, 14, H - 14), state);
+    attachNewTroopsToGarrisonFrom(state, prevTroopLen);
   }
 
   function applyHeavenlyThreeLaserDamage(state, src) {
@@ -1387,6 +1720,198 @@
     });
   }
 
+  function countDrillGoblinsAlive(state, drillId) {
+    let n = 0;
+    for (const u of state.troops) {
+      if (u.hp > 0 && u.type === "goblin" && u.spawnedByDrillId === drillId) n++;
+    }
+    return n;
+  }
+
+  function createMeleeGoblinFromDrill(state, drill) {
+    const jitter = (Math.random() - 0.5) * 14;
+    const dir = drill.side === "player" ? -1 : 1;
+    const faceY = drill.side === "player" ? -1 : 1;
+    state.troops.push({
+      id: `u${++state.uid}`,
+      side: drill.side,
+      type: "goblin",
+      x: drill.x + jitter,
+      y: drill.y + dir * 20,
+      hp: GOBLIN_HP,
+      maxHp: GOBLIN_HP,
+      speed: SPEED_GOBLIN,
+      radius: 4,
+      path: "deploy",
+      bridgeIx: pickBridgeIx(drill.x + jitter, drill.y + dir * 20),
+      spawnTime: state.time,
+      lastMeleeAt: -999,
+      hitInterval: ATTACK_INTERVAL_SKELETON,
+      hitDamage: GOBLIN_DMG,
+      meleeRange: 15,
+      attackT: 0,
+      faceX: 0,
+      faceY,
+      stunUntil: 0,
+      combatLocked: false,
+      spawnedByDrillId: drill.id,
+    });
+    const u = state.troops[state.troops.length - 1];
+    u.bridgeIx = pickBridgeIx(u.x, u.y);
+    ensureBridgeLaneOx(u);
+  }
+
+  function createGoblinDrillBuilding(side, x, y, state) {
+    state.buildings.push({
+      id: `b${++state.uid}`,
+      kind: "goblin_drill",
+      side,
+      x,
+      y,
+      hp: GOBLIN_DRILL_HP,
+      maxHp: GOBLIN_DRILL_HP,
+      radius: 22,
+      spawnAcc: 0,
+      drillDeathSpawned: false,
+    });
+  }
+
+  /** When drill HP hits 0 — small death spawn (not periodic spawns). */
+  function spawnGoblinsOnDrillDeath(state, bd, count) {
+    const side = bd.side;
+    const faceY = side === "player" ? -1 : 1;
+    const offs = [
+      [-10, 8],
+      [10, 8],
+    ];
+    const start = state.troops.length;
+    const nSpawn = Math.min(count, offs.length);
+    for (let i = 0; i < nSpawn; i++) {
+      const [ox, oy] = offs[i];
+      const sx = bd.x + ox;
+      const sy = bd.y + oy * faceY;
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "goblin",
+        x: sx,
+        y: sy,
+        hp: GOBLIN_HP,
+        maxHp: GOBLIN_HP,
+        speed: SPEED_GOBLIN,
+        radius: 4,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(sx, sy),
+        spawnTime: state.time,
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_SKELETON,
+        hitDamage: GOBLIN_DMG,
+        meleeRange: 15,
+        attackT: 0,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+      });
+    }
+    for (let i = start; i < state.troops.length; i++) {
+      const t = state.troops[i];
+      t.bridgeIx = pickBridgeIx(t.x, t.y);
+      ensureBridgeLaneOx(t);
+    }
+  }
+
+  /** @param {"player"|"enemy"} ownerSide Drill owner — tunnel ends on opponent's turf. */
+  function startDrillDeployment(state, ownerSide, tx, ty) {
+    const kt = kingTowerForSide(state, ownerSide);
+    const sx = kt ? kt.x : W / 2;
+    const sy = kt ? kt.y + (ownerSide === "player" ? -20 : 20) : ownerSide === "player" ? H - 90 : 90;
+    state.drillDeployments.push({
+      side: ownerSide,
+      sx,
+      sy,
+      tx,
+      ty,
+      startAt: state.time,
+      travelSec: GOBLIN_DRILL_TRAVEL_SEC,
+    });
+  }
+
+  /** One tap → {@link GOBLIN_DRILL_ARMY_COUNT} burrows from king to clustered points near the placement. */
+  function startDrillArmyDeployments(state, ownerSide, cx, cy) {
+    const foe = drillDeployFoeSide(ownerSide);
+    /** Six landing sites in a loose ring around your tap (each tunnels from king). */
+    const offs = [
+      [0, 0],
+      [-18, -10],
+      [18, -10],
+      [-18, 10],
+      [18, 10],
+      [0, 16],
+    ];
+    for (let i = 0; i < offs.length && i < GOBLIN_DRILL_ARMY_COUNT; i++) {
+      const [ox, oy] = offs[i];
+      let tx = cx + ox;
+      let ty = cy + oy;
+      if (!spellInArena(tx, ty)) {
+        tx = clamp(tx, 16, W - 16);
+        ty = clamp(ty, 16, H - 16);
+      }
+      if (!canDeploy(state, foe, tx, ty)) {
+        const sn = snapToDeployable(state, foe, tx, ty);
+        if (!sn) continue;
+        tx = sn.x;
+        ty = sn.y;
+      }
+      startDrillDeployment(state, ownerSide, tx, ty);
+    }
+  }
+
+  function updateDrillDeployments(state) {
+    const arr = state.drillDeployments;
+    if (!arr || !arr.length) return;
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const d = arr[i];
+      if (state.time >= d.startAt + d.travelSec) {
+        createGoblinDrillBuilding(d.side, d.tx, d.ty, state);
+        arr.splice(i, 1);
+      }
+    }
+  }
+
+  function updateGoblinDrillDecay(dt, state) {
+    const buildings = state.buildings;
+    if (!buildings || !buildings.length) return;
+    for (const b of buildings) {
+      if (b.hp <= 0 || b.kind !== "goblin_drill") continue;
+      applyBuildingDamage(state, b, GOBLIN_DRILL_DECAY_PER_SEC * dt);
+    }
+  }
+
+  function updateGoblinDrillSpawns(dt, state) {
+    const buildings = state.buildings;
+    if (!buildings || !buildings.length) return;
+    for (const b of buildings) {
+      if (b.hp <= 0 || b.kind !== "goblin_drill") continue;
+      if (!trainingEnemyAiEnabled(state) && b.side === trainingAiSide(state)) {
+        b.spawnAcc = 0;
+        continue;
+      }
+      b.spawnAcc = (b.spawnAcc || 0) + dt;
+      while (
+        b.spawnAcc >= GOBLIN_DRILL_SPAWN_INTERVAL &&
+        countDrillGoblinsAlive(state, b.id) < MAX_DRILL_GOBLINS
+      ) {
+        b.spawnAcc -= GOBLIN_DRILL_SPAWN_INTERVAL;
+        createMeleeGoblinFromDrill(state, b);
+      }
+    }
+  }
+
+  function drillDeployFoeSide(ownerSide) {
+    return ownerSide === "player" ? "enemy" : "player";
+  }
+
   function spawnSkeletonsFromTombstoneSite(state, site, count) {
     const side = site.side;
     const faceY = side === "player" ? -1 : 1;
@@ -1485,9 +2010,42 @@
     });
   }
 
+  function createLuxuryHotelBuilding(side, x, y, state) {
+    state.buildings.push({
+      id: `b${++state.uid}`,
+      kind: "luxury_hotel",
+      side,
+      x,
+      y,
+      hp: LUXURY_HOTEL_HP,
+      maxHp: LUXURY_HOTEL_HP,
+      radius: 22,
+      garrisonTroopId: /** @type {null | string} */ (null),
+      garrisonTroopId2: /** @type {null | string} */ (null),
+    });
+  }
+
+  function createPrinceTowerBuilding(side, x, y, state) {
+    state.buildings.push({
+      id: `b${++state.uid}`,
+      kind: "prince_tower",
+      side,
+      x,
+      y,
+      hp: PRINCE_PLACEABLE_HP,
+      maxHp: PRINCE_PLACEABLE_HP,
+      radius: 26,
+      fireAt: 0,
+      stunUntil: 0,
+      aggroKind: /** @type {null | "troop" | "building"} */ (null),
+      aggroId: /** @type {null | string} */ (null),
+      combatLocked: false,
+    });
+  }
+
   function releaseTroopFromGarrison(state, troop, bd) {
     delete troop.garrisonBuildingId;
-    if (bd.garrisonTroopId === troop.id) bd.garrisonTroopId = null;
+    clearTroopGarrisonSlots(bd, troop.id);
     troop.x = bd.x;
     troop.y = bd.y;
     troop.bridgeIx = pickBridgeIx(troop.x, troop.y);
@@ -1500,10 +2058,10 @@
     if (!troop || troop.garrisonBuildingId) return false;
     const cand = (state.buildings || []).filter(
       (bd) =>
-        bd.kind === "garrison_tower" &&
+        isGarrisonLikeKind(bd.kind) &&
         bd.side === troop.side &&
         bd.hp > 0 &&
-        !bd.garrisonTroopId &&
+        hasOpenGarrisonSlot(bd) &&
         dist(troop.x, troop.y, bd.x, bd.y) <= bd.radius * 0.82,
     );
     if (!cand.length) return false;
@@ -1513,7 +2071,7 @@
     troop.path = "garrison";
     troop.x = bd.x;
     troop.y = bd.y;
-    bd.garrisonTroopId = troop.id;
+    assignGarrisonTroopToBuilding(bd, troop.id);
     clearTroopAggro(troop);
     return true;
   }
@@ -1606,6 +2164,7 @@
       if (heavenlyTungRageActive(u)) continue;
       if (u.hp <= 0) continue;
       if (troopInsideGarrisonAlive(u, state)) continue;
+      if (u.flying) continue;
       const d = dist(b.x, b.y, u.x, u.y);
       if (d <= range && d < bestD) {
         bestD = d;
@@ -1704,6 +2263,7 @@
     const R = HUT_TRIGGER_RADIUS;
     for (const u of state.troops) {
       if (u.side === hut.side) continue;
+      if (u.type === "assassin") continue;
       if (u.hp <= 0 && !heavenlyTungRageActive(u)) continue;
       if (dist(hut.x, hut.y, u.x, u.y) <= R) return true;
     }
@@ -1779,10 +2339,19 @@
     const allowed = new Set(ALL_CARD_IDS);
     const seen = new Set();
     for (const c of deck) {
-      if (typeof c !== "string" || !allowed.has(c) || seen.has(c)) return false;
-      seen.add(c);
+      const cid = typeof c === "string" && c === "builder" ? "build" : c;
+      if (typeof cid !== "string" || !allowed.has(cid) || seen.has(cid)) return false;
+      seen.add(cid);
     }
     return true;
+  }
+
+  /** Map retired card ids saved in older decks onto current ids. */
+  function normalizeDeckCardIds(deck) {
+    if (!deck || !Array.isArray(deck)) return [];
+    return deck.map((c) =>
+      typeof c === "string" && c === "builder" ? "build" : c,
+    );
   }
 
   function shuffleDeckFrom(sourceIds) {
@@ -1796,8 +2365,13 @@
     return d;
   }
 
+  function troopRageMultiplier(troop, now) {
+    return troop.rageUntil != null && now < troop.rageUntil ? RAGE_MOVE_ATK_MUL : 1;
+  }
+
   function meleeCooldownReady(troop, now) {
-    const hitMul = troop.type === "bir_patapin" ? (troop.patapinAttackMul || 1) : 1;
+    const rageM = troopRageMultiplier(troop, now);
+    const hitMul = (troop.type === "bir_patapin" ? (troop.patapinAttackMul || 1) : 1) * rageM;
     const hitInterval = troop.hitInterval / hitMul;
     if (isFastMeleeSwarmType(troop)) {
       return now - troop.lastMeleeAt >= hitInterval;
@@ -1837,6 +2411,35 @@
         stunUntil: 0,
         combatLocked: false,
       });
+    } else if (type === "assassin") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "assassin",
+        x,
+        y,
+        hp: KNIGHT_HP,
+        maxHp: KNIGHT_HP,
+        speed: SPEED_MINI_PEKKA,
+        radius: 9,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        hasHitOnce: false,
+        firstHitDelay: MELEE_FIRST_HIT_DELAY,
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_MINI_PEKKA,
+        hitDamage: MINI_DMG,
+        meleeRange: 18,
+        attackT: 0,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+        assassinWindupSec: 0,
+        assassinCharging: false,
+      });
+      grantTroopBuffShield(state.troops[state.troops.length - 1]);
     } else if (type === "knight") {
       state.troops.push({
         id: `u${++state.uid}`,
@@ -2053,6 +2656,11 @@
         combatLocked: false,
       });
     } else if (type === "chud") {
+      const trainAlwaysEvo =
+        state.matchMode === "training" && state.testing && state.testing.chudAlwaysEvo;
+      const idx = state.chudCycleIdx[side];
+      const isEvo = trainAlwaysEvo ? true : idx % 2 === 1;
+      state.chudCycleIdx[side] = idx + 1;
       state.troops.push({
         id: `u${++state.uid}`,
         side,
@@ -2077,6 +2685,8 @@
         faceY,
         stunUntil: 0,
         combatLocked: false,
+        chudEvo: isEvo,
+        chudEvoPulseAcc: 0,
       });
     } else if (type === "mega_goblin_army") {
       state.troops.push({
@@ -2107,11 +2717,13 @@
         spawnAcc: 0,
       });
     } else if (type === "archers") {
-      const pair = [
-        [-14, -4],
-        [14, 4],
+      const quad = [
+        [-15, -5],
+        [15, -5],
+        [-15, 6],
+        [15, 6],
       ];
-      for (const [ox, oy] of pair) {
+      for (const [ox, oy] of quad) {
         state.troops.push({
           id: `u${++state.uid}`,
           side,
@@ -2136,6 +2748,66 @@
           combatLocked: false,
         });
       }
+    } else if (type === "bats") {
+      const golden = 2.17;
+      for (let i = 0; i < BAT_COUNT; i++) {
+        const a = i * golden;
+        const r = 3.5 + Math.sqrt(i + 1) * 4.5;
+        const ox = Math.cos(a) * r * 0.75;
+        const oy = Math.sin(a) * r * 0.55;
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "bat",
+          x: x + ox,
+          y: y + oy,
+          hp: BAT_HP,
+          maxHp: BAT_HP,
+          speed: SPEED_BAT,
+          radius: 3.2,
+          path: "fight",
+          flying: true,
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          spawnTime: state.time,
+          lastMeleeAt: -999,
+          hitInterval: ATTACK_INTERVAL_SKELETON,
+          hitDamage: BAT_DMG,
+          meleeRange: BAT_MELEE_RANGE,
+          attackT: 0,
+          faceX: 0,
+          faceY,
+          stunUntil: 0,
+          combatLocked: false,
+        });
+      }
+      const startBat = state.troops.length - BAT_COUNT;
+      for (let i = startBat; i < state.troops.length; i++) {
+        const t = state.troops[i];
+        t.bridgeIx = pickBridgeIx(t.x, t.y);
+        ensureBridgeLaneOx(t);
+      }
+    } else if (type === "boberdino_crocodelo") {
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "boberdino_crocodelo",
+        x,
+        y,
+        hp: BOBERDINO_HP,
+        maxHp: BOBERDINO_HP,
+        speed: BOBERDINO_SPEED,
+        radius: 14,
+        path: "fight",
+        flying: true,
+        bridgeIx: pickBridgeIx(x, y),
+        spawnTime: state.time,
+        faceX: 0,
+        faceY,
+        stunUntil: 0,
+        combatLocked: false,
+        boberBombAcc: BOBERDINO_BOMB_INTERVAL_SEC * 0.35,
+        boberPhase: 0,
+      });
     } else if (type === "spear_goblins") {
       const trio = [
         [-12, -2],
@@ -2230,7 +2902,7 @@
         });
       }
     } else if (type === "skarmy") {
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < SKARMY_SPAWN_COUNT; i++) {
         const a = i * 1.37;
         const r = 2.5 + i * 1.15;
         const ox = Math.cos(a) * r * 0.85;
@@ -2256,6 +2928,112 @@
           faceY,
           stunUntil: 0,
           combatLocked: false,
+        });
+      }
+    } else if (type === "archers_army") {
+      for (let i = 0; i < SKARMY_SPAWN_COUNT; i++) {
+        const a = i * 1.37;
+        const r = 2.5 + i * 1.15;
+        const ox = Math.cos(a) * r * 0.85;
+        const oy = Math.sin(a) * r * 0.65;
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "archer",
+          x: x + ox,
+          y: y + oy,
+          hp: ARCHER_HP,
+          maxHp: ARCHER_HP,
+          speed: SPEED_ARCHER,
+          radius: 3.5,
+          path: "deploy",
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          spawnTime: state.time,
+          faceX: 0,
+          faceY,
+          fireAt: 0,
+          rangedDmg: ARCHER_SHOT_DMG,
+          rangedRange: ARCHER_RANGE,
+          rangedInterval: ATTACK_INTERVAL_ARCHER,
+          attackT: 0,
+          stunUntil: 0,
+          combatLocked: false,
+        });
+      }
+    } else if (type === "bat_army") {
+      for (let i = 0; i < SKARMY_SPAWN_COUNT; i++) {
+        const a = i * 1.37;
+        const r = 2.5 + i * 1.15;
+        const ox = Math.cos(a) * r * 0.85;
+        const oy = Math.sin(a) * r * 0.65;
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "bat",
+          x: x + ox,
+          y: y + oy,
+          hp: BAT_HP,
+          maxHp: BAT_HP,
+          speed: SPEED_BAT,
+          radius: 3.2,
+          path: "fight",
+          flying: true,
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          spawnTime: state.time,
+          lastMeleeAt: -999,
+          hitInterval: ATTACK_INTERVAL_SKELETON,
+          hitDamage: BAT_DMG,
+          meleeRange: BAT_MELEE_RANGE,
+          attackT: 0,
+          faceX: 0,
+          faceY,
+          stunUntil: 0,
+          combatLocked: false,
+        });
+      }
+      const startBat = state.troops.length - SKARMY_SPAWN_COUNT;
+      for (let i = startBat; i < state.troops.length; i++) {
+        const t = state.troops[i];
+        t.bridgeIx = pickBridgeIx(t.x, t.y);
+        ensureBridgeLaneOx(t);
+      }
+    } else if (type === "mega_knight_army") {
+      for (let i = 0; i < SKARMY_SPAWN_COUNT; i++) {
+        const a = i * 1.37;
+        const r = 2.5 + i * 1.15;
+        const ox = Math.cos(a) * r * 0.85;
+        const oy = Math.sin(a) * r * 0.65;
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side,
+          type: "mega_knight",
+          x: x + ox,
+          y: y + oy,
+          hp: MEGA_KNIGHT_HP,
+          maxHp: MEGA_KNIGHT_HP,
+          speed: SPEED_MEGA_KNIGHT,
+          radius: 11,
+          path: "deploy",
+          bridgeIx: pickBridgeIx(x + ox, y + oy),
+          spawnTime: state.time,
+          hasHitOnce: false,
+          firstHitDelay: MELEE_FIRST_HIT_DELAY,
+          lastMeleeAt: -999,
+          hitInterval: ATTACK_INTERVAL_MEGA_KNIGHT,
+          hitDamage: KNIGHT_DMG,
+          meleeRange: 30,
+          attackT: 0,
+          faceX: 0,
+          faceY,
+          stunUntil: 0,
+          combatLocked: false,
+          mkJumpPhase: 0,
+          mkWindupT: 0,
+          mkJumpT: 0,
+          mkJumpSX: 0,
+          mkJumpSY: 0,
+          mkJumpTX: 0,
+          mkJumpTY: 0,
         });
       }
     } else if (type === "mega_army") {
@@ -2403,6 +3181,11 @@
         });
       }
     } else if (type === "bomber") {
+      const trainAlwaysEvo =
+        state.matchMode === "training" && state.testing && state.testing.bomberAlwaysEvo;
+      const idx = state.bomberCycleIdx[side];
+      const isEvo = trainAlwaysEvo ? true : idx % 2 === 1;
+      state.bomberCycleIdx[side] = idx + 1;
       state.troops.push({
         id: `u${++state.uid}`,
         side,
@@ -2421,8 +3204,51 @@
         fireAt: 0,
         rangedDmg: BOMBER_SPLASH_DMG,
         rangedRange: BOMBER_RANGE,
-        rangedInterval: ATTACK_INTERVAL_BOMBER,
+        rangedInterval: isEvo ? ATTACK_INTERVAL_BOMBER_EVO : ATTACK_INTERVAL_BOMBER,
         attackT: 0,
+        stunUntil: 0,
+        combatLocked: false,
+        bomberEvo: isEvo,
+      });
+    }
+    for (let i = start; i < state.troops.length; i++) {
+      const t = state.troops[i];
+      t.bridgeIx = pickBridgeIx(t.x, t.y);
+      ensureBridgeLaneOx(t);
+    }
+  }
+
+  /** Three melee goblins in standard triangle layout (matches {@link createTroop} <code>"goblins"</code>). */
+  function spawnThreeMeleeGoblinsAt(state, side, cx, cy) {
+    const faceY = side === "player" ? -1 : 1;
+    const start = state.troops.length;
+    const offs = [
+      [0, 0],
+      [-8, 6],
+      [8, 6],
+    ];
+    for (const [ox, oy] of offs) {
+      const px = cx + ox;
+      const py = cy + oy;
+      state.troops.push({
+        id: `u${++state.uid}`,
+        side,
+        type: "goblin",
+        x: px,
+        y: py,
+        hp: GOBLIN_HP,
+        maxHp: GOBLIN_HP,
+        speed: SPEED_GOBLIN,
+        radius: 4,
+        path: "deploy",
+        bridgeIx: pickBridgeIx(px, py),
+        lastMeleeAt: -999,
+        hitInterval: ATTACK_INTERVAL_SKELETON,
+        hitDamage: GOBLIN_DMG,
+        meleeRange: 15,
+        attackT: 0,
+        faceX: 0,
+        faceY,
         stunUntil: 0,
         combatLocked: false,
       });
@@ -2492,27 +3318,111 @@
     return { x: mx, y: RIVER_TOP - 28 };
   }
 
+  function updateBoberdinoFlight(dt, troop, state) {
+    if (!troopActsOnBattlefield(troop)) return;
+    if (troop.garrisonBuildingId) {
+      const bd = (state.buildings || []).find((b) => b.id === troop.garrisonBuildingId);
+      if (!bd || bd.hp <= 0 || !isGarrisonLikeKind(bd.kind)) {
+        delete troop.garrisonBuildingId;
+        if (bd) clearTroopGarrisonSlots(bd, troop.id);
+        troop.bridgeIx = pickBridgeIx(troop.x, troop.y);
+        ensureBridgeLaneOx(troop);
+      } else return;
+    }
+    if (troopStunned(troop, state.time)) return;
+
+    const ct = resolveCombatPick(troop, state);
+    let tx = null;
+    let ty = null;
+    if (ct && ct.kind === "tower" && ct.tower.hp > 0) {
+      tx = ct.tower.x;
+      ty = ct.tower.y;
+    }
+    const rageM = troopRageMultiplier(troop, state.time);
+    const step = troop.speed * rageM * dt;
+    if (tx != null && ty != null) {
+      const d = dist(troop.x, troop.y, tx, ty);
+      if (d > BOBERDINO_HOVER_DIST) {
+        const n = norm(tx - troop.x, ty - troop.y);
+        troop.x += n.x * step;
+        troop.y += n.y * step;
+        troop.boberPhase = 0;
+      } else {
+        troop.boberPhase = (troop.boberPhase || 0) + dt * 2.6;
+        const w = 4.5;
+        troop.x = tx + Math.sin(troop.boberPhase) * w;
+        troop.y = ty + Math.cos(troop.boberPhase * 1.07) * w * 0.72;
+      }
+    }
+
+    troop.boberBombAcc = (troop.boberBombAcc || 0) + dt;
+    while (troop.boberBombAcc >= BOBERDINO_BOMB_INTERVAL_SEC) {
+      troop.boberBombAcc -= BOBERDINO_BOMB_INTERVAL_SEC;
+      const bx = troop.x;
+      const by = troop.y + BOBERDINO_BOMB_DROP_OFFSET_Y;
+      applyBoberdinoBombStrike(bx, by, troop.side, state);
+    }
+  }
+
   function updateTroopNavAndMove(dt, troop, state) {
     if (!troopActsOnBattlefield(troop)) return;
     if (heavenlyTungRageActive(troop)) return;
     if (troop.garrisonBuildingId) {
       const bd = (state.buildings || []).find((b) => b.id === troop.garrisonBuildingId);
-      if (!bd || bd.hp <= 0 || bd.kind !== "garrison_tower") {
+      if (!bd || bd.hp <= 0 || !isGarrisonLikeKind(bd.kind)) {
         delete troop.garrisonBuildingId;
-        if (bd && bd.garrisonTroopId === troop.id) bd.garrisonTroopId = null;
+        if (bd) clearTroopGarrisonSlots(bd, troop.id);
         troop.bridgeIx = pickBridgeIx(troop.x, troop.y);
         ensureBridgeLaneOx(troop);
         if (troop.path === "garrison") troop.path = "fight";
       } else {
-        troop.x = bd.x;
-        troop.y = bd.y;
+        if (bd.kind === "luxury_hotel" && bd.garrisonTroopId && bd.garrisonTroopId2) {
+          troop.x = bd.x + (troop.id === bd.garrisonTroopId ? -11 : 11);
+          troop.y = bd.y;
+        } else {
+          troop.x = bd.x;
+          troop.y = bd.y;
+        }
         return;
       }
     }
     if (troopStunned(troop, state.time)) return;
+    if (troop.flying && troop.type === "boberdino_crocodelo") {
+      updateBoberdinoFlight(dt, troop, state);
+      return;
+    }
+    if (troop.flying) {
+      const speedMul = troop.type === "bir_patapin" ? (troop.patapinSpeedMul || 1) : 1;
+      const rageM = troopRageMultiplier(troop, state.time);
+      const step = troop.speed * speedMul * rageM * dt;
+      const ct = resolveCombatPick(troop, state);
+      let tx = null;
+      let ty = null;
+      if (ct) {
+        if (ct.kind === "troop" && ct.troop.hp > 0 && !heavenlyTungRageActive(ct.troop)) {
+          tx = ct.troop.x;
+          ty = ct.troop.y;
+        } else if (ct.kind === "tower" && ct.tower.hp > 0) {
+          tx = ct.tower.x;
+          ty = ct.tower.y;
+        } else if (ct.kind === "building" && ct.building.hp > 0) {
+          tx = ct.building.x;
+          ty = ct.building.y;
+        }
+      }
+      if (tx != null && ty != null) {
+        const n = norm(tx - troop.x, ty - troop.y);
+        troop.x += n.x * step;
+        troop.y += n.y * step;
+      }
+      return;
+    }
     if (troop.type === "mega_knight" && troop.mkJumpPhase) return;
     const speedMul = troop.type === "bir_patapin" ? (troop.patapinSpeedMul || 1) : 1;
-    const step = troop.speed * speedMul * dt;
+    const rageM = troopRageMultiplier(troop, state.time);
+    const chargeMul =
+      troop.type === "assassin" && troop.assassinCharging ? ASSASSIN_CHARGE_SPEED_MUL : 1;
+    const step = troop.speed * speedMul * rageM * dt * chargeMul;
     const ct = resolveCombatPick(troop, state);
     let tx = null;
     let ty = null;
@@ -2597,18 +3507,20 @@
     if (d < 1e-3) return;
     troop.faceX = (tx - troop.x) / d;
     troop.faceY = (ty - troop.y) / d;
-    if (troop.type === "mini_pekka") troop.attackT = 0.32;
+    if (troop.type === "mini_pekka" || troop.type === "assassin") troop.attackT = 0.32;
     else     if (troop.type === "knight") troop.attackT = 0.26;
     else if (troop.type === "bir_patapin") troop.attackT = 0.22;
     else if (troop.type === "tung_tung_tung_sahur" || troop.type === "heavenly_tung") troop.attackT = 0.018;
     else if (troop.type === "chud" || troop.type === "mega_goblin_army") troop.attackT = 0.38;
     else if (troop.type === "mega_knight") troop.attackT = 0.34;
+    else if (troop.type === "bat") troop.attackT = 0.14;
     else if (isRangedTroopType(troop)) troop.attackT = 0.22;
     else troop.attackT = 0.18;
   }
 
   function tryMelee(troop, state, now) {
     if (!troopActsOnBattlefield(troop)) return;
+    if (troop.type === "boberdino_crocodelo") return;
     if (heavenlyTungRageActive(troop)) return;
     if (troopStunned(troop, now)) return;
     if (troop.type === "mega_knight") return;
@@ -2622,8 +3534,15 @@
       const o = ct.troop;
       if (heavenlyTungRageActive(o)) return;
       if (o.hp <= 0) return;
+      if (!canAttackerFightEnemyTroop(troop, o)) return;
       if (dist(troop.x, troop.y, o.x, o.y) > troop.meleeRange + o.radius * 0.5 + MELEE_REACH_BONUS) return;
-      applyTroopDamage(o, troop.hitDamage);
+      let dmg = troop.hitDamage;
+      if (troop.type === "assassin" && troop.assassinCharging) {
+        dmg *= 2;
+        troop.assassinCharging = false;
+      }
+      applyTroopDamage(o, dmg);
+      if (troop.type === "assassin") applyAssassinMeleeSplash(state, troop, o, dmg, o.x, o.y);
       troop.lastMeleeAt = now;
       troop.combatLocked = true;
       if (!isFastMeleeSwarmType(troop)) troop.hasHitOnce = true;
@@ -2722,9 +3641,11 @@
       }),
     ];
 
-    const pSrc =
-      runtimePlayerDeck && validateDeckForGame(runtimePlayerDeck) ? runtimePlayerDeck : DEFAULT_DECK_EIGHT;
-    const pDeck = shuffleDeckFrom(pSrc);
+    const pSrcRaw =
+      runtimePlayerDeck && validateDeckForGame(runtimePlayerDeck)
+        ? runtimePlayerDeck.slice()
+        : DEFAULT_DECK_EIGHT.slice();
+    const pDeck = shuffleDeckFrom(normalizeDeckCardIds(pSrcRaw));
     const eDeck = shuffleDeckFrom(DEFAULT_DECK_EIGHT);
     return {
       towers,
@@ -2747,16 +3668,35 @@
       arrowFx: null,
       /** @type {{ cx: number; cy: number; until: number } | null} */
       fireballFx: null,
+      /** Barrel landing puff (spawn only — no AoE damage). */
+      goblinBarrelFx: /** @type {{ cx: number; cy: number; until: number } | null} */ (null),
+      /** @type {{ cx: number; cy: number; until: number } | null} */
+      rocketFx: null,
+      /** @type {{ cx: number; cy: number; until: number } | null} */
+      shieldBuffFx: null,
+      /** Brief ring when Build spell repairs allied buildings (@link ARROWS_SPELL_RADIUS). */
+      buildRepairFx: /** @type {{ cx: number; cy: number; until: number } | null} */ (null),
       /** @type {{ cx: number; cy: number; until: number } | null} */
       zapFx: null,
+      rageFx: /** @type {{ cx: number; cy: number; until: number } | null} */ (null),
+      /** Per side — Mirror copies that side’s most recent placement (ignored for opponent). */
+      lastPlayedBySide: {
+        /** @type {string | null} */
+        player: null,
+        /** @type {string | null} */
+        enemy: null,
+      },
       /** @type {{ cx: number; cy: number; R: number; until: number; side: "player" | "enemy" }[]} */
       freezeZones: [],
-      /** @type {{ cx: number; cy: number; until: number; radius: number; kind: "wizard" | "mega_jump" | "mega_ground" | "tung_boom" | "witch" | "electro_hit" }[]} */
+      /** @type {{ cx: number; cy: number; until: number; radius: number; kind: "wizard" | "mega_jump" | "mega_ground" | "bomber_evo" | "chud_evo" | "tung_boom" | "witch" | "electro_hit" }[]} */
       wizardSplashFx: [],
       /** @type {object[]} */
       buildings: [],
       /** @type {{ at: number; side: "player" | "enemy"; card: string; x: number; y: number }[]} */
       pendingDeploys: [],
+      /** Goblin Drill: burrows from king → target; emerges when travel ends. */
+      /** @type {{ side: "player" | "enemy"; sx: number; sy: number; tx: number; ty: number; startAt: number; travelSec: number }[]} */
+      drillDeployments: [],
       enemyBrainAcc: 0,
       over: false,
       winner: null,
@@ -2769,6 +3709,10 @@
       remoteEmote: null,
       /** @type {"training" | "battle"} */
       matchMode: "training",
+      /** Per side: count of Bomber deploys — alternates normal / Evo Bomber. */
+      bomberCycleIdx: { player: 0, enemy: 0 },
+      /** Per side: count of Chud deploys — alternates normal / Evo Chud (pulse shockwave). */
+      chudCycleIdx: { player: 0, enemy: 0 },
       /** PvP: regulation ended (clock hit 0); tie → overtime, else winner set. */
       pvpRegulationResolved: false,
       /** PvP: sudden death after regulation tie; first princess tower ends the match. */
@@ -2777,10 +3721,18 @@
       testing: {
         enemySpawns: true,
         infiniteElixir: false,
+        /** Training: princess + king arena towers ignore all damage while alive (fallen towers stay dead). */
+        infiniteTowerHp: false,
         /** Training: you deploy on the top (enemy) side; AI uses the bottom. */
         playAsEnemy: false,
         /** Training: draw attack ranges, projectile collision radii, and HP labels. */
         combatDebug: false,
+        /** Training: troops you deploy never lose HP (enemy troops unaffected). */
+        invincibleTroops: false,
+        /** Training: every Bomber is Evo (bouncing bomb). */
+        bomberAlwaysEvo: false,
+        /** Training: every Chud is Evo (timed shockwave). */
+        chudAlwaysEvo: false,
       },
     };
   }
@@ -2794,6 +3746,7 @@
         if (!troopActsOnBattlefield(u)) continue;
         if (u.garrisonBuildingId === b.id) continue;
         if (heavenlyTungRageActive(u)) continue;
+        if (u.type === "boberdino_crocodelo") continue;
         const minD = u.radius + b.radius + padding;
         const d = dist(u.x, u.y, b.x, b.y);
         if (d >= minD || d < 1e-4) continue;
@@ -2806,18 +3759,18 @@
   }
 
   /** Nearest foe troop or building in tower range (CR-style). */
-  function nearestFoeForTowerAttack(tower, state) {
-    const range = tower.kind === "king" ? KING_RANGE : PRINCESS_RANGE;
+  function nearestFoeInRangeForArenaShooter(ax, ay, atkSide, range, state) {
     let best = /** @type {{ kind: "troop"; troop: (typeof state.troops)[0] } | { kind: "building"; building: (typeof state.buildings)[0] } | null} */ (
       null
     );
     let bestD = Infinity;
     for (const u of state.troops) {
-      if (u.side === tower.side) continue;
+      if (u.side === atkSide) continue;
+      if (u.type === "assassin") continue;
       if (heavenlyTungRageActive(u)) continue;
       if (u.hp <= 0) continue;
       if (troopInsideGarrisonAlive(u, state)) continue;
-      const d = dist(tower.x, tower.y, u.x, u.y);
+      const d = dist(ax, ay, u.x, u.y);
       if (d <= range && d < bestD) {
         bestD = d;
         best = { kind: "troop", troop: u };
@@ -2825,14 +3778,19 @@
     }
     const buildings = state.buildings || [];
     for (const b of buildings) {
-      if (b.hp <= 0 || b.side === tower.side) continue;
-      const d = dist(tower.x, tower.y, b.x, b.y);
+      if (b.hp <= 0 || b.side === atkSide) continue;
+      const d = dist(ax, ay, b.x, b.y);
       if (d <= range && d < bestD) {
         bestD = d;
         best = { kind: "building", building: b };
       }
     }
     return best;
+  }
+
+  function nearestFoeForTowerAttack(tower, state) {
+    const range = tower.kind === "king" ? KING_RANGE : PRINCESS_RANGE;
+    return nearestFoeInRangeForArenaShooter(tower.x, tower.y, tower.side, range, state);
   }
 
   function clearTowerAggro(tower) {
@@ -2870,6 +3828,10 @@
     if (tower.aggroKind === "troop") {
       const u = state.troops.find((x) => x.id === tower.aggroId);
       if (!u || u.side === tower.side || heavenlyTungRageActive(u) || u.hp <= 0) {
+        clearTowerAggro(tower);
+        return null;
+      }
+      if (u.type === "assassin") {
         clearTowerAggro(tower);
         return null;
       }
@@ -2953,6 +3915,122 @@
     });
   }
 
+  function clearPrinceTowerAggro(bd) {
+    bd.aggroKind = null;
+    bd.aggroId = null;
+    bd.combatLocked = false;
+  }
+
+  function tryResolvePrinceTowerAggro(bd, state) {
+    if (!bd.aggroKind || !bd.aggroId) return null;
+    if (bd.aggroKind === "troop") {
+      const u = state.troops.find((x) => x.id === bd.aggroId);
+      if (!u || u.side === bd.side || heavenlyTungRageActive(u) || u.hp <= 0) {
+        clearPrinceTowerAggro(bd);
+        return null;
+      }
+      if (u.type === "assassin") {
+        clearPrinceTowerAggro(bd);
+        return null;
+      }
+      if (troopInsideGarrisonAlive(u, state)) {
+        clearPrinceTowerAggro(bd);
+        return null;
+      }
+      return { kind: "troop", troop: u };
+    }
+    if (bd.aggroKind === "building") {
+      const ob = (state.buildings || []).find((x) => x.id === bd.aggroId);
+      if (!ob || ob.hp <= 0 || ob.side === bd.side || ob === bd) {
+        clearPrinceTowerAggro(bd);
+        return null;
+      }
+      return { kind: "building", building: ob };
+    }
+    clearPrinceTowerAggro(bd);
+    return null;
+  }
+
+  function setPrinceTowerAggroFromPick(bd, pick) {
+    if (!pick) {
+      clearPrinceTowerAggro(bd);
+      return;
+    }
+    if (pick.kind === "troop") {
+      bd.aggroKind = "troop";
+      bd.aggroId = pick.troop.id;
+    } else {
+      bd.aggroKind = "building";
+      bd.aggroId = pick.building.id;
+    }
+  }
+
+  function princeTowerTargetInEngageRange(bd, ct) {
+    const range = PRINCESS_RANGE;
+    if (ct.kind === "troop") return dist(bd.x, bd.y, ct.troop.x, ct.troop.y) <= range;
+    return dist(bd.x, bd.y, ct.building.x, ct.building.y) <= range;
+  }
+
+  /** Placeable building: princess range / cadence / bolt damage; no HP decay. */
+  function princeTowerBuildingShoot(state, bd, now) {
+    if (bd.kind !== "prince_tower" || bd.hp <= 0 || state.over) return;
+    if (bd.stunUntil != null && now < bd.stunUntil) return;
+    const cd = PRINCESS_FIRE;
+    if (now < bd.fireAt) return;
+
+    let ct = null;
+    if (bd.combatLocked) {
+      const locked = tryResolvePrinceTowerAggro(bd, state);
+      if (locked && princeTowerTargetInEngageRange(bd, locked)) {
+        ct = locked;
+      } else {
+        clearPrinceTowerAggro(bd);
+      }
+    }
+    if (!ct) ct = nearestFoeInRangeForArenaShooter(bd.x, bd.y, bd.side, PRINCESS_RANGE, state);
+    if (!ct) {
+      clearPrinceTowerAggro(bd);
+      return;
+    }
+    setPrinceTowerAggroFromPick(bd, ct);
+    bd.combatLocked = true;
+
+    let tx;
+    let ty;
+    let targetKind;
+    let targetId;
+    if (ct.kind === "troop") {
+      tx = ct.troop.x;
+      ty = ct.troop.y;
+      targetKind = "troop";
+      targetId = ct.troop.id;
+    } else {
+      tx = ct.building.x;
+      ty = ct.building.y;
+      targetKind = "building";
+      targetId = ct.building.id;
+    }
+
+    bd.fireAt = now + cd;
+    const n = norm(tx - bd.x, ty - bd.y);
+    const dmg = PRINCESS_DMG;
+    const yOff = bd.side === "enemy" ? 20 : -20;
+    state.projectiles.push({
+      x: bd.x,
+      y: bd.y + yOff,
+      vx: n.x * PROJ_SPEED,
+      vy: n.y * PROJ_SPEED,
+      dmg,
+      fromSide: bd.side,
+      hitsTowers: true,
+      projKind: "princess",
+      projRadius: 5,
+      homing: true,
+      targetKind,
+      targetId,
+    });
+  }
+
   /** Nearest foe troop, building, or targetable tower within ranged shot range (CR-style). */
   function pickRangedShotTarget(unit, state) {
     if (troopStunned(unit, state.time)) return null;
@@ -2973,6 +4051,7 @@
       if (u.side === unit.side) continue;
       if (heavenlyTungRageActive(u)) continue;
       if (u.hp <= 0) continue;
+      if (unit.type === "bomber" && isFlyingTroop(u)) continue;
       if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(unit.x, unit.y, u.x, u.y);
       if (d <= shotR && d < bestD) {
@@ -3015,6 +4094,7 @@
       if (u.side === unit.side) continue;
       if (heavenlyTungRageActive(u)) continue;
       if (u.hp <= 0) continue;
+      if (unit.type === "bomber" && isFlyingTroop(u)) continue;
       if (troopInsideGarrisonAlive(u, state)) continue;
       const d = dist(unit.x, unit.y, u.x, u.y);
       if (d <= shotR) arr.push({ ct: { kind: "troop", troop: u }, d });
@@ -3092,6 +4172,7 @@
     if (troopStunned(unit, now)) return;
     if (!isRangedTroopType(unit)) return;
     if (now < unit.fireAt) return;
+    const rMul = troopRageMultiplier(unit, now);
     if (unit.type === "electro_wizard") {
       const list = collectSortedRangedFoeTargets(unit, state);
       if (!list.length) return;
@@ -3104,7 +4185,7 @@
         }
       }
       setTroopAggroFromPick(unit, primary);
-      unit.fireAt = now + unit.rangedInterval;
+      unit.fireAt = now + unit.rangedInterval / rMul;
       unit.combatLocked = true;
       triggerAttackAnim(unit, primary.kind === "troop" ? primary.troop.x : primary.kind === "tower" ? primary.tower.x : primary.building.x, primary.kind === "troop" ? primary.troop.y : primary.kind === "tower" ? primary.tower.y : primary.building.y);
       applyElectroInstantStrike(state, unit.side, primary, unit.rangedDmg);
@@ -3113,7 +4194,7 @@
     }
     const target = pickRangedShotTarget(unit, state);
     if (!target) return;
-    unit.fireAt = now + unit.rangedInterval;
+    unit.fireAt = now + unit.rangedInterval / rMul;
     unit.combatLocked = true;
     let tx;
     let ty;
@@ -3129,6 +4210,7 @@
     }
     triggerAttackAnim(unit, tx, ty);
     const n = norm(tx - unit.x, ty - unit.y);
+    const bomberSpd = PROJ_SPEED * BOMBER_PROJ_SPEED_SCALE;
     const yOff = unit.side === "enemy" ? 8 : -8;
     const projKind =
       unit.type === "spear_goblin"
@@ -3158,8 +4240,8 @@
     state.projectiles.push({
       x: unit.x,
       y: unit.y + yOff,
-      vx: n.x * PROJ_SPEED,
-      vy: n.y * PROJ_SPEED,
+      vx: n.x * (unit.type === "bomber" ? bomberSpd : PROJ_SPEED),
+      vy: n.y * (unit.type === "bomber" ? bomberSpd : PROJ_SPEED),
       dmg: unit.rangedDmg,
       fromSide: unit.side,
       hitsTowers: true,
@@ -3175,6 +4257,7 @@
                 ? 5.2
                 : 4,
       homing: true,
+      bomberEvo: unit.type === "bomber" ? !!unit.bomberEvo : false,
       targetKind,
       targetId,
     });
@@ -3250,11 +4333,37 @@
     }
   }
 
+  /** Assassin melee: other enemy ground troops near the primary take a fraction of the same strike damage. */
+  function applyAssassinMeleeSplash(state, attacker, primaryTroop, strikeDmg, cx, cy) {
+    const splashDmg = Math.max(1, Math.floor(strikeDmg * ASSASSIN_SPLASH_FRACTION));
+    if (splashDmg <= 0) return;
+    const R = ASSASSIN_SPLASH_RADIUS;
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.side === attacker.side) continue;
+      if (u === primaryTroop) continue;
+      if (heavenlyTungRageActive(u)) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      if (isFlyingTroop(u)) continue;
+      if (!canAttackerFightEnemyTroop(attacker, u)) continue;
+      if (dist(u.x, u.y, cx, cy) <= R + u.radius * 0.35) {
+        applyTroopDamage(u, splashDmg);
+      }
+    }
+    state.wizardSplashFx.push({
+      cx,
+      cy,
+      until: state.time + 0.38,
+      radius: R,
+      kind: "wizard",
+    });
+  }
+
   /** Full damage to every foe troop/building/tower in radius (no primary skip). */
-  function applyFullAoEToFoes(state, cx, cy, fromSide, radius, dmg) {
+  function applyFullAoEToFoes(state, cx, cy, fromSide, radius, dmg, skipAirborneTroops) {
     if (dmg <= 0) return;
     for (const u of state.troops) {
       if (u.hp <= 0 || u.side === fromSide) continue;
+      if (skipAirborneTroops && isFlyingTroop(u)) continue;
       if (troopInsideGarrisonAlive(u, state)) continue;
       if (dist(u.x, u.y, cx, cy) <= radius + u.radius * 0.35) {
         applyTroopDamage(u, dmg);
@@ -3274,6 +4383,88 @@
         applyTowerDamage(state, tw, dmg);
       }
     }
+  }
+
+  function applyBomberSplashAt(state, bx, by, fromSide, tOff, isEvoBomber) {
+    applyFullAoEToFoes(state, bx, by, fromSide, BOMBER_SPLASH_RADIUS, BOMBER_SPLASH_DMG, true);
+    state.wizardSplashFx.push({
+      cx: bx,
+      cy: by,
+      until: state.time + 0.48 + tOff,
+      radius: BOMBER_SPLASH_RADIUS,
+      kind: isEvoBomber ? "bomber_evo" : "mega_ground",
+    });
+  }
+
+  function applyChudEvoShockwave(state, chud) {
+    const cx = chud.x;
+    const cy = chud.y;
+    const fromSide = chud.side;
+    const R = CHUD_EVO_PULSE_RADIUS;
+    const dmg = CHUD_EVO_PULSE_DMG;
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.side === fromSide) continue;
+      if (u.id === chud.id) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      const d = dist(u.x, u.y, cx, cy);
+      if (d <= R + u.radius * 0.35) {
+        applyTroopDamage(u, dmg);
+        if (d > 1e-4 && !heavenlyTungRageActive(u)) {
+          const nx = (u.x - cx) / d;
+          const ny = (u.y - cy) / d;
+          slideNudge(u, nx * CHUD_EVO_KNOCK_DIST, ny * CHUD_EVO_KNOCK_DIST);
+        }
+      }
+    }
+    for (const bd of state.buildings || []) {
+      if (bd.hp <= 0 || bd.side === fromSide) continue;
+      if (dist(bd.x, bd.y, cx, cy) <= R + bd.radius * 0.4) {
+        applyBuildingDamage(state, bd, dmg);
+      }
+    }
+    for (const tw of state.towers) {
+      if (tw.hp <= 0 || tw.side === fromSide) continue;
+      if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+      const ext = tw.kind === "king" ? 32 : 24;
+      if (dist(tw.x, tw.y, cx, cy) <= R + ext) {
+        applyTowerDamage(state, tw, dmg);
+      }
+    }
+    state.wizardSplashFx.push({
+      cx,
+      cy,
+      until: state.time + 0.45,
+      radius: R,
+      kind: "chud_evo",
+    });
+  }
+
+  function updateChudEvoPulse(dt, troop, state) {
+    if (!troop.chudEvo || !troopActsOnBattlefield(troop) || troop.hp <= 0) return;
+    troop.chudEvoPulseAcc = (troop.chudEvoPulseAcc || 0) + dt;
+    while (troop.chudEvoPulseAcc >= CHUD_EVO_PULSE_SEC) {
+      troop.chudEvoPulseAcc -= CHUD_EVO_PULSE_SEC;
+      applyChudEvoShockwave(state, troop);
+    }
+  }
+
+  /** Evo Bomber only: first splash past the target; bomb keeps flying and drops timed follow-up splashes. */
+  function beginBomberChainProjectile(state, p, homingResolved) {
+    const vm = Math.hypot(p.vx, p.vy) || 1;
+    const fx = p.vx / vm;
+    const fy = p.vy / vm;
+    const sx = homingResolved.x + fx * BOMBER_SPLASH_AIM_PAST;
+    const sy = homingResolved.y + fy * BOMBER_SPLASH_AIM_PAST;
+    applyBomberSplashAt(state, sx, sy, p.fromSide, 0, !!p.bomberEvo);
+    const spd = PROJ_SPEED * BOMBER_PROJ_SPEED_SCALE;
+    p.x = sx;
+    p.y = sy;
+    p.vx = fx * spd;
+    p.vy = fy * spd;
+    p.homing = false;
+    p.bomberChainActive = true;
+    p.bomberRingsRemaining = BOMBER_CHAIN_FOLLOW_UP_COUNT;
+    p.bomberChainTimer = BOMBER_CHAIN_STEP_SEC;
   }
 
   function resetMegaKnightJump(troop) {
@@ -3340,8 +4531,10 @@
       return;
     }
 
+    const rDt = dt * troopRageMultiplier(troop, now);
+
     if (troop.mkJumpPhase === 1 && troop.mkWindupT > 0) {
-      troop.mkWindupT -= dt;
+      troop.mkWindupT -= rDt;
       if (troop.mkWindupT <= 0) {
         troop.mkWindupT = 0;
         troop.mkJumpPhase = 2;
@@ -3352,7 +4545,7 @@
 
     if (troop.mkJumpPhase === 2 && troop.mkJumpT > 0) {
       const dur = MEGA_KNIGHT_JUMP_DURATION;
-      troop.mkJumpT -= dt;
+      troop.mkJumpT -= rDt;
       const t = clamp(1 - troop.mkJumpT / dur, 0, 1);
       const e = t * t * (3 - 2 * t);
       troop.x = troop.mkJumpSX + (troop.mkJumpTX - troop.mkJumpSX) * e;
@@ -3431,6 +4624,53 @@
       const p = projectiles[i];
       const pr = p.projRadius ?? PROJ_RADIUS;
 
+      if (p.projKind === "bomber" && p.bomberChainActive) {
+        let rem = dt;
+        let done = false;
+        while (rem > 1e-9 && !done) {
+          if ((p.bomberRingsRemaining ?? 0) <= 0) {
+            projectiles.splice(i, 1);
+            done = true;
+            break;
+          }
+          let timer = p.bomberChainTimer ?? BOMBER_CHAIN_STEP_SEC;
+          if (timer <= 1e-8 && (p.bomberRingsRemaining ?? 0) > 0) {
+            applyBomberSplashAt(state, p.x, p.y, p.fromSide, 0, !!p.bomberEvo);
+            p.bomberRingsRemaining = (p.bomberRingsRemaining ?? 0) - 1;
+            if (p.bomberRingsRemaining <= 0) {
+              projectiles.splice(i, 1);
+              done = true;
+              break;
+            }
+            p.bomberChainTimer = BOMBER_CHAIN_STEP_SEC;
+            continue;
+          }
+          const step = Math.min(rem, timer);
+          if (step < 1e-12) break;
+          p.x += p.vx * step;
+          p.y += p.vy * step;
+          p.bomberChainTimer = timer - step;
+          rem -= step;
+          if (p.bomberChainTimer <= 1e-8 && (p.bomberRingsRemaining ?? 0) > 0) {
+            applyBomberSplashAt(state, p.x, p.y, p.fromSide, 0, !!p.bomberEvo);
+            p.bomberRingsRemaining = (p.bomberRingsRemaining ?? 0) - 1;
+            if (p.bomberRingsRemaining <= 0) {
+              projectiles.splice(i, 1);
+              done = true;
+              break;
+            }
+            p.bomberChainTimer = BOMBER_CHAIN_STEP_SEC;
+          }
+        }
+        if (
+          !done &&
+          (p.x < -80 - pr || p.x > W + 80 + pr || p.y < -80 - pr || p.y > H + 80 + pr)
+        ) {
+          projectiles.splice(i, 1);
+        }
+        continue;
+      }
+
       let homingResolved = null;
       if (p.homing) {
         homingResolved = resolveHomingProjectileTarget(p, state);
@@ -3439,12 +4679,33 @@
           continue;
         }
         const steer = norm(homingResolved.x - p.x, homingResolved.y - p.y);
-        p.vx = steer.x * PROJ_SPEED;
-        p.vy = steer.y * PROJ_SPEED;
+        const spd = p.projKind === "bomber" ? PROJ_SPEED * BOMBER_PROJ_SPEED_SCALE : PROJ_SPEED;
+        p.vx = steer.x * spd;
+        p.vy = steer.y * spd;
       }
 
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+
+      if (p.goblinBarrelSpell) {
+        const tx = p.targetX ?? p.x;
+        const ty = p.targetY ?? p.y;
+        if (p.x < -20 - pr || p.x > W + 20 + pr || p.y < -20 - pr || p.y > H + 20 + pr) {
+          projectiles.splice(i, 1);
+          continue;
+        }
+        const reached =
+          dist(p.x, p.y, tx, ty) <= pr + 5 || p.vx * (tx - p.x) + p.vy * (ty - p.y) <= 0;
+        if (reached) {
+          const prev = state.troops.length;
+          spawnThreeMeleeGoblinsAt(state, p.fromSide, tx, ty);
+          attachNewTroopsToGarrisonFrom(state, prev);
+          state.goblinBarrelFx = { cx: tx, cy: ty, until: state.time + 0.5 };
+          projectiles.splice(i, 1);
+          continue;
+        }
+        continue;
+      }
 
       if (p.fireballSpell) {
         const tx = p.targetX ?? p.x;
@@ -3484,6 +4745,45 @@
         continue;
       }
 
+      if (p.rocketSpell) {
+        const tx = p.targetX ?? p.x;
+        const ty = p.targetY ?? p.y;
+        if (p.x < -20 - pr || p.x > W + 20 + pr || p.y < -20 - pr || p.y > H + 20 + pr) {
+          projectiles.splice(i, 1);
+          continue;
+        }
+        const reached =
+          dist(p.x, p.y, tx, ty) <= pr + 5 || p.vx * (tx - p.x) + p.vy * (ty - p.y) <= 0;
+        if (reached) {
+          const R = ROCKET_SPELL_RADIUS;
+          for (const u of state.troops) {
+            if (u.hp <= 0 || u.side === p.fromSide) continue;
+            if (troopInsideGarrisonAlive(u, state)) continue;
+            if (dist(u.x, u.y, tx, ty) <= R) {
+              applyTroopDamage(u, ROCKET_SPELL_DMG);
+            }
+          }
+          for (const tw of state.towers) {
+            if (tw.hp <= 0 || tw.side === p.fromSide) continue;
+            if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+            const ext = tw.kind === "king" ? 34 : 26;
+            if (dist(tw.x, tw.y, tx, ty) <= R + ext) {
+              applyTowerDamage(state, tw, ROCKET_TOWER_DMG);
+            }
+          }
+          for (const bd of state.buildings || []) {
+            if (bd.hp <= 0 || bd.side === p.fromSide) continue;
+            if (dist(bd.x, bd.y, tx, ty) <= R + bd.radius) {
+              applyBuildingDamage(state, bd, ROCKET_SPELL_DMG);
+            }
+          }
+          state.rocketFx = { cx: tx, cy: ty, until: state.time + 0.52 };
+          projectiles.splice(i, 1);
+          continue;
+        }
+        continue;
+      }
+
       if (p.x < -20 - pr || p.x > W + 20 + pr || p.y < -20 - pr || p.y > H + 20 + pr) {
         projectiles.splice(i, 1);
         continue;
@@ -3497,21 +4797,18 @@
         }
         if (dist(p.x, p.y, homingResolved.x, homingResolved.y) < homingResolved.hitR + pr + PROJECTILE_HIT_FUDGE) {
           if (p.projKind === "bomber") {
-            applyFullAoEToFoes(
-              state,
-              homingResolved.x,
-              homingResolved.y,
-              p.fromSide,
-              BOMBER_SPLASH_RADIUS,
-              BOMBER_SPLASH_DMG,
-            );
-            state.wizardSplashFx.push({
-              cx: homingResolved.x,
-              cy: homingResolved.y,
-              until: state.time + 0.48,
-              radius: BOMBER_SPLASH_RADIUS,
-              kind: "mega_ground",
-            });
+            if (p.bomberEvo) {
+              beginBomberChainProjectile(state, p, homingResolved);
+              continue;
+            }
+            const vm = Math.hypot(p.vx, p.vy) || 1;
+            const fx = p.vx / vm;
+            const fy = p.vy / vm;
+            const sx = homingResolved.x + fx * BOMBER_SPLASH_AIM_PAST;
+            const sy = homingResolved.y + fy * BOMBER_SPLASH_AIM_PAST;
+            applyBomberSplashAt(state, sx, sy, p.fromSide, 0, false);
+            projectiles.splice(i, 1);
+            continue;
           } else {
             applyProjectileDamageResolved(state, p, homingResolved);
             if (p.projKind === "wizard" || p.projKind === "witch") {
@@ -3580,12 +4877,66 @@
     const slots = [];
     for (let s = 0; s < 4; s++) {
       const c = state.enemyHand[s];
-      if (c && state.enemyElixir >= cardCost(c)) slots.push(s);
+      if (!c) continue;
+      const ec = effectiveCardCost(state, c, aiSide);
+      if (!Number.isFinite(ec)) continue;
+      if (state.enemyElixir >= ec) slots.push(s);
     }
     if (!slots.length) return;
     const slot = slots[Math.floor(Math.random() * slots.length)];
     const card = state.enemyHand[slot];
-    const cost = cardCost(card);
+    const cost = effectiveCardCost(state, card, aiSide);
+
+    if (card === "shields") {
+      const px = clamp(120 + Math.random() * 560, 24, W - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
+      state.enemyElixir -= cost;
+      applyShieldBuffSpell(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "shields");
+      cycleEnemyHand(state, slot);
+      return;
+    }
+
+    if (card === "rage") {
+      const px = clamp(120 + Math.random() * 560, 24, W - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
+      state.enemyElixir -= cost;
+      applyRageStrike(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "rage");
+      cycleEnemyHand(state, slot);
+      return;
+    }
+
+    if (card === "mirror") {
+      const inner =
+        aiSide === "player" ? state.lastPlayedBySide.player : state.lastPlayedBySide.enemy;
+      if (!inner || inner === "mirror") return;
+      const sx = clamp(120 + Math.random() * 560, 24, W - 24);
+      const sy =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
+      let mx = sx;
+      let my = sy;
+      if (!isSpellCardId(inner)) {
+        mx = 260 + Math.random() * 280;
+        my =
+          aiSide === "enemy"
+            ? 52 + Math.random() * 70
+            : RIVER_BOT + 45 + Math.random() * Math.max(40, H - RIVER_BOT - 90);
+      }
+      if (!runMirrorReplay(state, aiSide, inner, mx, my)) return;
+      state.enemyElixir -= cost;
+      notifyLastPlayedCard(state, aiSide, inner);
+      cycleEnemyHand(state, slot);
+      return;
+    }
 
     if (card === "arrows") {
       const px = clamp(120 + Math.random() * 560, 24, W - 24);
@@ -3595,6 +4946,7 @@
           : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
       state.enemyElixir -= cost;
       applyArrowsStrike(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "arrows");
       cycleEnemyHand(state, slot);
       return;
     }
@@ -3606,6 +4958,31 @@
           : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
       state.enemyElixir -= cost;
       applyFireballStrike(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "fireball");
+      cycleEnemyHand(state, slot);
+      return;
+    }
+    if (card === "goblin_barrel") {
+      const px = clamp(120 + Math.random() * 560, 24, W - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
+      state.enemyElixir -= cost;
+      applyGoblinBarrelStrike(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "goblin_barrel");
+      cycleEnemyHand(state, slot);
+      return;
+    }
+    if (card === "rocket") {
+      const px = clamp(120 + Math.random() * 560, 24, W - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
+      state.enemyElixir -= cost;
+      applyRocketStrike(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "rocket");
       cycleEnemyHand(state, slot);
       return;
     }
@@ -3617,6 +4994,7 @@
           : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
       state.enemyElixir -= cost;
       applyZapStrike(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "zap");
       cycleEnemyHand(state, slot);
       return;
     }
@@ -3628,6 +5006,65 @@
           : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
       state.enemyElixir -= cost;
       applyFreezeStrike(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "freeze");
+      cycleEnemyHand(state, slot);
+      return;
+    }
+
+    if (card === "goblin_drill") {
+      const foe = drillDeployFoeSide(aiSide);
+      for (let a = 0; a < 12; a++) {
+        const gx = 72 + Math.random() * (W - 144);
+        const gy =
+          foe === "player"
+            ? RIVER_BOT + 35 + Math.random() * (H - RIVER_BOT - 70)
+            : 36 + Math.random() * (RIVER_TOP - 72);
+        if (canDeploy(state, foe, gx, gy)) {
+          state.enemyElixir -= cost;
+          startDrillDeployment(state, aiSide, gx, gy);
+          notifyLastPlayedCard(state, aiSide, "goblin_drill");
+          cycleEnemyHand(state, slot);
+          return;
+        }
+      }
+      return;
+    }
+
+    if (card === "goblin_drill_army") {
+      const foe = drillDeployFoeSide(aiSide);
+      for (let a = 0; a < 24; a++) {
+        const gx = 72 + Math.random() * (W - 144);
+        const gy =
+          foe === "player"
+            ? RIVER_BOT + 35 + Math.random() * (H - RIVER_BOT - 70)
+            : 36 + Math.random() * (RIVER_TOP - 72);
+        if (canDeploy(state, foe, gx, gy)) {
+          state.enemyElixir -= cost;
+          startDrillArmyDeployments(state, aiSide, gx, gy);
+          notifyLastPlayedCard(state, aiSide, "goblin_drill_army");
+          cycleEnemyHand(state, slot);
+          return;
+        }
+      }
+      return;
+    }
+
+    if (card === "build") {
+      const px = clamp(120 + Math.random() * 560, 24, W - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
+      state.enemyElixir -= cost;
+      applyBuildRepairSpell(px, py, aiSide, state);
+      notifyLastPlayedCard(state, aiSide, "build");
+      cycleEnemyHand(state, slot);
+      return;
+    }
+
+    if (card === "nothing" || card === "nothing_army") {
+      state.enemyElixir -= cost;
+      notifyLastPlayedCard(state, aiSide, card);
       cycleEnemyHand(state, slot);
       return;
     }
@@ -3641,6 +5078,10 @@
     state.enemyElixir -= cost;
     queueDeploySpawn(state, aiSide, card, x, y);
     cycleEnemyHand(state, slot);
+  }
+
+  function isArenaWideTapNoSpawnCard(card) {
+    return card === "nothing" || card === "nothing_army";
   }
 
   function canDeploy(state, side, x, y) {
@@ -3684,7 +5125,17 @@
   }
 
   function isSpellCardId(card) {
-    return card === "arrows" || card === "fireball" || card === "zap" || card === "freeze";
+    return (
+      card === "arrows" ||
+      card === "fireball" ||
+      card === "goblin_barrel" ||
+      card === "rocket" ||
+      card === "zap" ||
+      card === "freeze" ||
+      card === "shields" ||
+      card === "build" ||
+      card === "rage"
+    );
   }
 
   function drawDeployZoneOverlay(ctx, state) {
@@ -3694,7 +5145,12 @@
     const card = state.hand[slot];
     if (!card) return;
 
-    if (isSpellCardId(card)) {
+    const hs = humanControlSide(state);
+    const myMirror = hs === "player" ? state.lastPlayedBySide.player : state.lastPlayedBySide.enemy;
+    const overlayCard =
+      card === "mirror" && myMirror && myMirror !== "mirror" ? myMirror : card;
+
+    if (isSpellCardId(overlayCard) || isArenaWideTapNoSpawnCard(overlayCard) || overlayCard === "goblin_drill" || overlayCard === "goblin_drill_army") {
       ctx.save();
       ctx.strokeStyle = "rgba(251, 191, 36, 0.75)";
       ctx.lineWidth = 2.5;
@@ -3705,7 +5161,22 @@
       ctx.setLineDash([]);
       ctx.fillStyle = "rgba(254, 243, 199, 0.85)";
       ctx.font = "600 11px system-ui";
-      ctx.fillText("Spell — anywhere in arena", W / 2 - 72, 24);
+      let spellHint = "Spell — anywhere in arena";
+      let hintX = W / 2 - 72;
+      if (overlayCard === "nothing") {
+        spellHint = "Nothing — places nothing (tap anywhere)";
+        hintX = W / 2 - 132;
+      } else if (overlayCard === "nothing_army") {
+        spellHint = `Nothing Army — ${NOTHING_ARMY_COUNT}× nothing (still nothing on arena)`;
+        hintX = W / 2 - 168;
+      } else if (overlayCard === "goblin_drill") {
+        spellHint = "Goblin Drill — tap opponent’s grass; burrows from your king (~1s)";
+        hintX = W / 2 - 188;
+      } else if (overlayCard === "goblin_drill_army") {
+        spellHint = `Drill Army (${GOBLIN_DRILL_ARMY_COST} elixir) — tap center on opponent grass; six burrows`;
+        hintX = W / 2 - 205;
+      }
+      ctx.fillText(spellHint, hintX, 24);
       ctx.restore();
       return;
     }
@@ -3713,7 +5184,6 @@
     ctx.save();
     const step = DEPLOY_HINT_STEP;
     ctx.fillStyle = "rgba(34, 197, 94, 0.11)";
-    const hs = humanControlSide(state);
     for (let gx = 48 + step / 2; gx < W - 48; gx += step) {
       for (let gy = 36 + step / 2; gy < H - 36; gy += step) {
         if (canDeploy(state, hs, gx, gy)) {
@@ -3767,8 +5237,13 @@
   }
 
   function cardCost(card) {
+    if (card === "mirror") return Infinity;
+    if (card === "nothing" || card === "nothing_army") return NOTHING_COST;
+    if (card === "shields") return SHIELDS_SPELL_COST;
+    if (card === "rage") return RAGE_SPELL_COST;
     if (card === "mini_pekka") return MINI_PEKKA_COST;
     if (card === "knight") return KNIGHT_COST;
+    if (card === "assassin") return ASSASSIN_COST;
     if (card === "tung_tung_tung_sahur") return TUNG_SAHUR_COST;
     if (card === "heavenly_tung") return HEAVENLY_TUNG_COST;
     if (card === "bir_bir_patapins") return BIR_BIR_PATAPINS_COST;
@@ -3779,6 +5254,9 @@
     if (card === "musketeer") return MUSKETEER_COST;
     if (card === "mega_knight") return MEGA_KNIGHT_COST;
     if (card === "archers") return ARCHERS_COST;
+    if (card === "archers_army") return ARCHERS_ARMY_COST;
+    if (card === "bat_army") return BAT_ARMY_COST;
+    if (card === "mega_knight_army") return MEGA_KNIGHT_ARMY_COST;
     if (card === "goblins") return GOBLINS_COST;
     if (card === "goblin_gang") return GOBLIN_GANG_COST;
     if (card === "chud") return CHUD_COST;
@@ -3787,22 +5265,46 @@
     if (card === "mega_army") return MEGA_ARMY_COST;
     if (card === "arrows") return ARROWS_COST;
     if (card === "fireball") return FIREBALL_COST;
+    if (card === "goblin_barrel") return GOBLIN_BARREL_COST;
+    if (card === "rocket") return ROCKET_COST;
     if (card === "goblin_hut") return GOBLIN_HUT_COST;
+    if (card === "goblin_drill") return GOBLIN_DRILL_COST;
+    if (card === "goblin_drill_army") return GOBLIN_DRILL_ARMY_COST;
+    if (card === "build") return BUILD_SPELL_COST;
     if (card === "garrison_tower") return GARRISON_TOWER_COST;
+    if (card === "luxury_hotel") return LUXURY_HOTEL_COST;
     if (card === "cannon") return CANNON_COST;
     if (card === "mega_goblin_army") return MEGA_GOBLIN_ARMY_COST;
     if (card === "zap") return ZAP_COST;
     if (card === "freeze") return FREEZE_COST;
     if (card === "bomber") return BOMBER_COST;
+    if (card === "bats") return BATS_COST;
+    if (card === "boberdino_crocodelo") return BOBERDINO_CROCODELO_COST;
+    if (card === "prince_tower") return PRINCE_TOWER_COST;
     return SKELETON_COST;
   }
 
+  /** For menu ordering: Mirror sorts last among normal cards; unknown IDs sort near the end; Nothing sorts after Mirror. */
+  function getCardCostNumber(cardId) {
+    const id = String(cardId);
+    if (id === "nothing") return 100000;
+    if (id === "nothing_army") return 100001;
+    const c = cardCost(cardId);
+    if (c === Infinity) return 99999;
+    if (typeof c === "number" && Number.isFinite(c)) return c;
+    return 99998;
+  }
+
   function cardUiInfo(cardId) {
-    const cost = cardCost(cardId);
+    /** Menu / static preview numbers (battle uses {@link effectiveCardCost} for Mirror). */
+    const cost =
+      cardId === "mirror" ? "?" : typeof cardCost(cardId) === "number" ? cardCost(cardId) : "?";
     if (cardId === "mini_pekka") {
       return { name: "Mini P.E.K.K.A", img: "assets/mini-pekka-w0.svg", cost };
     }
     if (cardId === "knight") return { name: "Knight", img: "assets/knight-w0.svg", cost };
+    if (cardId === "assassin")
+      return { name: "Assassin", img: "assets/assassin-card.svg", cost };
     if (cardId === "wizard")
       return { name: "Wizard", img: "assets/wizard-card.svg", cost };
     if (cardId === "electro_wizard")
@@ -3811,6 +5313,8 @@
     if (cardId === "witch") return { name: "Witch", img: "assets/witch-card.svg", cost };
     if (cardId === "mega_knight")
       return { name: "Mega Knight", img: "assets/mega-knight-card.svg", cost };
+    if (cardId === "mega_knight_army")
+      return { name: "Mega Knight Army", img: "assets/mega-knight-army-card.svg", cost };
     if (cardId === "musketeer")
       return { name: "Musketeer", img: "assets/musketeer-card.svg", cost };
     if (cardId === "skeleton") return { name: "Skeletons", img: "assets/skeleton-w0.svg", cost };
@@ -3835,6 +5339,12 @@
     if (cardId === "bir_bir_patapins")
       return { name: "Bir Bir Patapins", img: "assets/bir-bir-patapins-v2.png", cost };
     if (cardId === "archers") return { name: "Archers", img: "assets/archer-w0.svg", cost };
+    if (cardId === "archers_army")
+      return {
+        name: "Archers Army",
+        img: "assets/archers-army-card.svg",
+        cost,
+      };
     if (cardId === "spear_goblins")
       return { name: "Spear Goblins", img: "assets/spear-goblins-card.svg", cost };
     if (cardId === "skarmy") return { name: "Skarmy", img: "assets/skarmy-card.svg", cost };
@@ -3842,15 +5352,111 @@
       return { name: "Mega Army", img: "assets/mega-army-card.svg", cost };
     if (cardId === "arrows") return { name: "Arrows", img: "assets/arrows-card.svg", cost };
     if (cardId === "fireball") return { name: "Fireball", img: "assets/fireball-card.svg", cost };
+    if (cardId === "goblin_barrel") return { name: "Goblin Barrel", img: "assets/goblin-barrel-card.svg", cost };
+    if (cardId === "rocket") return { name: "Rocket", img: "assets/rocket-card.svg", cost };
     if (cardId === "goblin_hut") return { name: "Goblin Hut", img: "assets/goblin-hut-card.svg", cost };
+    if (cardId === "goblin_drill") return { name: "Goblin Drill", img: "assets/goblin-drill-card.svg", cost };
+    if (cardId === "goblin_drill_army")
+      return {
+        name: "Goblin Drill Army",
+        img: "assets/goblin-drill-army-card.svg",
+        cost,
+      };
+    if (cardId === "build")
+      return {
+        name: "Build",
+        img: "assets/build-card.svg",
+        cost,
+      };
     if (cardId === "cannon") return { name: "Cannon", img: "assets/cannon-card.svg", cost };
     if (cardId === "garrison_tower")
       return { name: "Garrison Tower", img: "assets/garrison-tower-card.svg", cost };
+    if (cardId === "luxury_hotel")
+      return { name: "Luxury Hotel", img: "assets/luxury-hotel-card.svg", cost };
     if (cardId === "mega_goblin_army")
       return { name: "Mega Goblin Army", img: "assets/mega-goblin-army-card.svg", cost };
     if (cardId === "zap") return { name: "Zap", img: "assets/zap-card.svg", cost };
     if (cardId === "freeze") return { name: "Freeze", img: "assets/freeze-card.svg", cost };
+    if (cardId === "shields") return { name: "Shields", img: "assets/shields-card.svg", cost };
+    if (cardId === "rage") return { name: "Rage", img: "assets/rage-card.svg", cost };
+    if (cardId === "nothing") return { name: "Nothing", img: "assets/nothing-card.svg", cost };
+    if (cardId === "nothing_army")
+      return {
+        name: "Nothing Army",
+        img: "assets/nothing-army-card.svg",
+        cost,
+      };
+    if (cardId === "mirror") return { name: "Mirror", img: "assets/mirror-card.svg", cost };
+    if (cardId === "bats") return { name: "Bats", img: "assets/bats-card.svg", cost };
+    if (cardId === "bat_army")
+      return { name: "Bat Army", img: "assets/bat-army-card.svg", cost };
+    if (cardId === "boberdino_crocodelo")
+      return {
+        name: "Boberdino Crocodelo",
+        img: "assets/boberdino-crocodelo-card.png",
+        cost,
+      };
+    if (cardId === "prince_tower") return { name: "Prince Tower", img: "assets/prince-tower-card.svg", cost };
     return { name: String(cardId), img: "assets/skeleton-w0.svg", cost };
+  }
+
+  /** Short blurbs for deck builder collection rows (offline menu). */
+  const COLLECTION_CARD_DESCRIPTIONS = {
+    mini_pekka: "Fast heavy melee — very high damage per swing; hunts ground targets.",
+    knight: "Durable melee tank — bridges the river and soaks hits for supports.",
+    assassin:
+      "Elite duelist — Knight HP and Mini P.E.K.K.A damage; only hunts enemy ground troops. Spawns with a shield; melee splashes half damage to nearby enemy ground troops. After 1s moving toward a foe he charges (purple aura, 2× move, 2× on next hit). Towers ignore him; Goblin Hut ring ignores him.",
+    skeleton: "Three cheap skeletons — cycle your deck or distract defenders.",
+    bomber:
+      "Ranged splash — bombs land past the target (30% slower than other bolts). Evo: purple cap, faster throws, traveling bomb with chained splashes every 0.3s.",
+    goblins: "Three melee goblins in a wedge — cheap, fast swarm.",
+    archers: "Four ranged archers — ground and air; keep them behind a tank.",
+    spear_goblins: "Ranged goblins with spears — cheap chip from behind the river line.",
+    archers_army: "Skarmy-sized ring of archers — lots of arrows, weak if splashed.",
+    goblin_gang: "Mix of melee and spear goblins — cheap split threat.",
+    chud:
+      "Heavy melee bruiser — enormous HP and chunky hits; bumps smaller fighters aside. Evo (every other deploy): shockwave every 2s — 100 area damage + knockback.",
+    skarmy: "Fifteen skeletons in a ring — surrounds and shreds single targets if not splashed.",
+    bat_army: "Fifteen bats in the same spiral — flying swarm; ground melee can’t reach them.",
+    mega_army: "Skeletons, shielded guards, and a witch — layered push with spawns.",
+    arrows: "Spell — damage in a circle anywhere on arena; hurts troops, towers, and enemy buildings.",
+    fireball: "Spell — projectile from your king; big burst where it lands.",
+    goblin_barrel: "Barrel flies like Fireball; spawns three melee goblins on landing (no spell damage).",
+    rocket: "Spell — tight, very high blast; strong vs clumped troops and towers.",
+    freeze: "Spell — lingering zone that damages once and locks enemies inside in stuns.",
+    goblin_hut: "Building — drains over time while spearing enemies who step in its spawn ring.",
+    cannon: "Timed cannon — shoots the nearest foe troop or building in range until it breaks.",
+    garrison_tower: "Decay tower — one troop hides inside until the structure dies.",
+    luxury_hotel: "Two-slot garrison building — hides two troops with special occupancy rules.",
+    mega_goblin_army: "Hut-bodied chud plus goblin spawns — long, messy push down a lane.",
+    goblin_drill: "Burrows from your king to a spot on enemy grass; drill spawns goblins while alive.",
+    goblin_drill_army: "Six drills from your king — ring deployment around your target point on their side.",
+    build: "Spell — restores HP to your damaged spawned buildings (huts, drills, etc.) in one splash.",
+    zap: "Spell — small radius damage and a short stun on troops and towers.",
+    wizard: "Ranged splash attacker — line-of-sight bolts with secondary splash.",
+    electro_wizard: "Ranged shots that can stun — good vs medium targets and support.",
+    tombstone: "Building — decays over time and periodically spawns skeletons; more on death.",
+    mega_knight: "Armored jumper — shadow leap onto clusters, ground splash on landing.",
+    mega_knight_army: "Fifteen Mega Knights in the same spiral as Skarmy — pure jump chaos.",
+    musketeer: "Long-range single-shot rifle — consistent DPS on one target at a time.",
+    tung_tung_tung_sahur: "Meme melee — absurd attack rate; explodes on death in a large ring.",
+    heavenly_tung:
+      "Super unit — charge, laser phase, then arena nuke; finale spawns 12 Tung Sahur, 3 Mega Goblin Army, and another Heavenly Tung.",
+    bir_bir_patapins: "Four flying patapins — ghost/squad rules when they fall.",
+    witch: "Splash bolts plus periodic skeleton spawns — back-line value engine.",
+    bats: "Five fast flying bats — swarm air/ground from the flanks.",
+    prince_tower: "Building — arena tower piece that shoots like a mini defensive turret.",
+    boberdino_crocodelo: "Flying bomber — circles a tower and drops repeating small fireballs below.",
+    mirror: "Copies your last card’s effect for a higher cost and adds mirror shields on spawns.",
+    nothing: "Places nothing — free cycle; tap anywhere to burn the card.",
+    nothing_army: "Many sequential nothings — still nothing on the field; tap anywhere.",
+    shields: "Spell — temporary shields on your troops and arena towers in the buff radius.",
+    rage: "Spell — speeds up allies in the ring and damages enemies once on drop.",
+  };
+
+  function collectionCardDescription(cardId) {
+    const id = String(cardId);
+    return COLLECTION_CARD_DESCRIPTIONS[id] || "Card in your deck — select it in a match to see the full deploy hint.";
   }
 
   function cyclePlayerHand(state, slot) {
@@ -3867,12 +5473,22 @@
 
   function spawnUnitOrBuildingNow(state, side, card, x, y) {
     const prevTroopLen = state.troops.length;
-    if (card === "goblin_hut") {
+    if (card === "nothing" || card === "nothing_army") {
+      /* Intentional no-op — hand still cycles via caller. */
+    } else if (card === "goblin_drill") {
+      startDrillDeployment(state, side, x, y);
+    } else if (card === "goblin_drill_army") {
+      startDrillArmyDeployments(state, side, x, y);
+    } else if (card === "goblin_hut") {
       createGoblinHutBuilding(side, x, y, state);
+    } else if (card === "prince_tower") {
+      createPrinceTowerBuilding(side, x, y, state);
     } else if (card === "cannon") {
       createCannonBuilding(side, x, y, state);
     } else if (card === "garrison_tower") {
       createGarrisonTowerBuilding(side, x, y, state);
+    } else if (card === "luxury_hotel") {
+      createLuxuryHotelBuilding(side, x, y, state);
     } else if (card === "tombstone") {
       createTombstoneBuilding(side, x, y, state);
     } else if (card === "bir_bir_patapins") {
@@ -3880,6 +5496,7 @@
     } else if (
       card === "mini_pekka" ||
       card === "knight" ||
+      card === "assassin" ||
       card === "wizard" ||
       card === "electro_wizard" ||
       card === "witch" ||
@@ -3889,11 +5506,20 @@
       card === "mega_goblin_army" ||
       card === "tung_tung_tung_sahur" ||
       card === "heavenly_tung" ||
-      card === "bomber"
+      card === "bomber" ||
+      card === "boberdino_crocodelo"
     ) {
       createTroop(side, card, x, y, state);
+    } else if (card === "bats") {
+      createTroop(side, "bats", x, y, state);
     } else if (card === "archers") {
       createTroop(side, "archers", x, y, state);
+    } else if (card === "archers_army") {
+      createTroop(side, "archers_army", x, y, state);
+    } else if (card === "bat_army") {
+      createTroop(side, "bat_army", x, y, state);
+    } else if (card === "mega_knight_army") {
+      createTroop(side, "mega_knight_army", x, y, state);
     } else if (card === "spear_goblins") {
       createTroop(side, "spear_goblins", x, y, state);
     } else if (card === "goblins") {
@@ -3929,6 +5555,7 @@
       const d = q[i];
       if (state.time < d.at) continue;
       spawnUnitOrBuildingNow(state, d.side, d.card, d.x, d.y);
+      notifyLastPlayedCard(state, d.side, d.card);
       q.splice(i, 1);
     }
   }
@@ -3988,6 +5615,109 @@
     });
   }
 
+  function applyGoblinBarrelStrike(cx, cy, attackerSide, state) {
+    const src = kingTowerForSide(state, attackerSide);
+    const sx = src ? src.x : cx;
+    const sy = src ? src.y + (attackerSide === "enemy" ? 20 : -20) : attackerSide === "enemy" ? 70 : H - 70;
+    const n = norm(cx - sx, cy - sy);
+    state.projectiles.push({
+      x: sx,
+      y: sy,
+      vx: n.x * FIREBALL_PROJ_SPEED,
+      vy: n.y * FIREBALL_PROJ_SPEED,
+      fromSide: attackerSide,
+      hitsTowers: true,
+      projKind: "goblin_barrel",
+      projRadius: 7,
+      goblinBarrelSpell: true,
+      targetX: cx,
+      targetY: cy,
+    });
+  }
+
+  /** Instant mini–Fireball at (cx,cy) — used by Boberdino Crocodelo bomber. */
+  function applyBoberdinoBombStrike(cx, cy, attackerSide, state) {
+    const R = BOBERDINO_BOMB_RADIUS;
+    const dTroop = BOBERDINO_BOMB_SPELL_DMG;
+    const dTower = BOBERDINO_BOMB_TOWER_DMG;
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.side === attackerSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      if (dist(u.x, u.y, cx, cy) <= R) {
+        applyTroopDamage(u, dTroop);
+      }
+    }
+    for (const tw of state.towers) {
+      if (tw.hp <= 0 || tw.side === attackerSide) continue;
+      if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+      const ext = tw.kind === "king" ? 34 : 26;
+      if (dist(tw.x, tw.y, cx, cy) <= R + ext) {
+        applyTowerDamage(state, tw, dTower);
+      }
+    }
+    for (const bd of state.buildings || []) {
+      if (bd.hp <= 0 || bd.side === attackerSide) continue;
+      if (dist(bd.x, bd.y, cx, cy) <= R + bd.radius) {
+        applyBuildingDamage(state, bd, dTroop);
+      }
+    }
+    state.wizardSplashFx.push({
+      cx,
+      cy,
+      until: state.time + 0.34,
+      radius: R,
+      kind: "boberdino_mini",
+    });
+  }
+
+  function applyRocketStrike(cx, cy, attackerSide, state) {
+    const src = kingTowerForSide(state, attackerSide);
+    const sx = src ? src.x : cx;
+    const sy = src ? src.y + (attackerSide === "enemy" ? 20 : -20) : attackerSide === "enemy" ? 70 : H - 70;
+    const n = norm(cx - sx, cy - sy);
+    state.projectiles.push({
+      x: sx,
+      y: sy,
+      vx: n.x * FIREBALL_PROJ_SPEED,
+      vy: n.y * FIREBALL_PROJ_SPEED,
+      dmg: ROCKET_SPELL_DMG,
+      fromSide: attackerSide,
+      hitsTowers: true,
+      projKind: "rocket_spell",
+      projRadius: 8,
+      rocketSpell: true,
+      targetX: cx,
+      targetY: cy,
+    });
+  }
+
+  /** Allies gain move + attack speed; enemies take one-time damage (towers/buildings hit like Zap). */
+  function applyRageStrike(cx, cy, allySide, state) {
+    const R = RAGE_SPELL_RADIUS;
+    const rageEnd = state.time + RAGE_BUFF_DURATION_SEC;
+    state.rageFx = { cx, cy, until: state.time + 0.42 };
+    for (const u of state.troops) {
+      if (u.hp <= 0) continue;
+      if (dist(u.x, u.y, cx, cy) > R) continue;
+      if (u.side === allySide) {
+        u.rageUntil = Math.max(u.rageUntil || 0, rageEnd);
+        continue;
+      }
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      applyTroopDamage(u, RAGE_SPELL_DMG);
+    }
+    for (const tw of state.towers) {
+      if (tw.hp <= 0 || tw.side === allySide) continue;
+      if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+      const ext = tw.kind === "king" ? 34 : 26;
+      if (dist(tw.x, tw.y, cx, cy) <= R + ext) applyTowerDamage(state, tw, RAGE_SPELL_DMG);
+    }
+    for (const bd of state.buildings || []) {
+      if (bd.hp <= 0 || bd.side === allySide) continue;
+      if (dist(bd.x, bd.y, cx, cy) <= R + bd.radius) applyBuildingDamage(state, bd, RAGE_SPELL_DMG);
+    }
+  }
+
   function applyZapStrike(cx, cy, attackerSide, state) {
     const R = ZAP_SPELL_RADIUS;
     const stunT = state.time + ZAP_STUN_DURATION;
@@ -4015,6 +5745,10 @@
       if (bd.hp <= 0 || bd.side === attackerSide) continue;
       if (dist(bd.x, bd.y, cx, cy) <= R + bd.radius) {
         applyBuildingDamage(state, bd, ZAP_SPELL_DMG);
+        if (bd.kind === "prince_tower") {
+          bd.stunUntil = Math.max(bd.stunUntil || 0, stunT);
+          clearPrinceTowerAggro(bd);
+        }
       }
     }
     state.zapFx = { cx, cy, until: state.time + 0.38 };
@@ -4048,6 +5782,10 @@
       if (bd.hp <= 0 || bd.side === attackerSide) continue;
       if (dist(bd.x, bd.y, cx, cy) <= R + bd.radius) {
         applyBuildingDamage(state, bd, dmg);
+        if (bd.kind === "prince_tower") {
+          bd.stunUntil = Math.max(bd.stunUntil || 0, stunT);
+          clearPrinceTowerAggro(bd);
+        }
       }
     }
     state.zapFx = { cx, cy, until: state.time + 0.38 };
@@ -4087,6 +5825,173 @@
     }
   }
 
+  /** @param {"player"|"enemy"} side Who placed the card — Mirror mirrors your own deck line only. */
+  function notifyLastPlayedCard(state, side, playedCard) {
+    if (!state || !playedCard || playedCard === "mirror") return;
+    if (side === "player") state.lastPlayedBySide.player = playedCard;
+    else if (side === "enemy") state.lastPlayedBySide.enemy = playedCard;
+  }
+
+  /** @param {"player"|"enemy"} side */
+  function mirrorPlayCost(state, side) {
+    if (!state) return Infinity;
+    const id =
+      side === "player" ? state.lastPlayedBySide.player : side === "enemy" ? state.lastPlayedBySide.enemy : null;
+    if (!id || id === "mirror") return Infinity;
+    return cardCost(id) + MIRROR_EXTRA_ELIXIR;
+  }
+
+  /**
+   * @param {"player"|"enemy" | undefined} mirrorSide Passing side is required only for decks that are not YOUR hand UI (enemy AI mirror).
+   */
+  function effectiveCardCost(state, playedCard, mirrorSide) {
+    const c = String(playedCard);
+    if (c === "mirror") {
+      const ms = mirrorSide ?? humanControlSide(state);
+      return mirrorPlayCost(state, ms);
+    }
+    return cardCost(c);
+  }
+
+  function grantTroopBuffShield(tr) {
+    tr.shieldMax = GENERIC_SHIELD_BUFF_HP;
+    tr.shieldHp = GENERIC_SHIELD_BUFF_HP;
+  }
+
+  function grantTowerBuffShield(tw) {
+    tw.shieldMax = GENERIC_SHIELD_BUFF_HP;
+    tw.shieldHp = GENERIC_SHIELD_BUFF_HP;
+  }
+
+  function grantBuildingBuffShield(bd) {
+    bd.shieldMax = GENERIC_SHIELD_BUFF_HP;
+    bd.shieldHp = GENERIC_SHIELD_BUFF_HP;
+  }
+
+  /** Swarm-ish deploys — Mirror shields ~⅓ when multiple bodies spawn off one card id. */
+  function mirrorTreatsSpawnAsSwarm(mirroredCard) {
+    return (
+      mirroredCard === "skeleton" ||
+      mirroredCard === "archers" ||
+      mirroredCard === "skarmy" ||
+      mirroredCard === "archers_army" ||
+      mirroredCard === "bat_army" ||
+      mirroredCard === "mega_knight_army" ||
+      mirroredCard === "spear_goblins" ||
+      mirroredCard === "goblins" ||
+      mirroredCard === "goblin_gang" ||
+      mirroredCard === "bats" ||
+      mirroredCard === "mega_army" ||
+      mirroredCard === "bir_bir_patapins"
+    );
+  }
+
+  function applyMirrorShieldsAfterSpawn(state, mirroredCard, prevTroopLen, prevBuildingLen, fromSpell) {
+    if (fromSpell) return;
+    const troopAdded = state.troops.slice(prevTroopLen);
+    const bNew = (state.buildings || []).slice(prevBuildingLen);
+    for (const bd of bNew) {
+      grantBuildingBuffShield(bd);
+    }
+    if (!troopAdded.length) return;
+    if (!mirrorTreatsSpawnAsSwarm(mirroredCard)) {
+      for (const t of troopAdded) grantTroopBuffShield(t);
+      return;
+    }
+    const sorted = troopAdded.slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    const shieldCount = Math.max(1, Math.ceil(sorted.length / 3));
+    for (let i = 0; i < shieldCount && i < sorted.length; i++) grantTroopBuffShield(sorted[i]);
+  }
+
+  /** Ally spawned buildings (+HP, capped): same footprint as Arrows vs buildings ({@link ARROWS_SPELL_RADIUS} + building radius). */
+  function applyBuildRepairSpell(cx, cy, allySide, state) {
+    const R = ARROWS_SPELL_RADIUS;
+    state.buildRepairFx = { cx, cy, until: state.time + 0.48 };
+    for (const bd of state.buildings || []) {
+      if (!bd || bd.hp <= 0 || bd.side !== allySide) continue;
+      if (dist(bd.x, bd.y, cx, cy) <= R + bd.radius) {
+        applyBuildingHealFlat(state, bd, BUILD_SPELL_HEAL);
+      }
+    }
+  }
+
+  /** @param {"player"|"enemy"} side */
+  function replayMirroredSpell(state, inner, cx, cy, side) {
+    if (inner === "arrows") applyArrowsStrike(cx, cy, side, state);
+    else if (inner === "fireball") applyFireballStrike(cx, cy, side, state);
+    else if (inner === "goblin_barrel") applyGoblinBarrelStrike(cx, cy, side, state);
+    else if (inner === "rocket") applyRocketStrike(cx, cy, side, state);
+    else if (inner === "zap") applyZapStrike(cx, cy, side, state);
+    else if (inner === "freeze") applyFreezeStrike(cx, cy, side, state);
+    else if (inner === "shields") applyShieldBuffSpell(cx, cy, side, state);
+    else if (inner === "build" || inner === "builder") applyBuildRepairSpell(cx, cy, side, state);
+    else if (inner === "rage") applyRageStrike(cx, cy, side, state);
+  }
+
+  /** Buff allied troops and arena towers standing in radius (½ Arrows splash). */
+  function applyShieldBuffSpell(cx, cy, allySide, state) {
+    state.shieldBuffFx = { cx, cy, until: state.time + 0.42 };
+    const R = SHIELDS_SPELL_RADIUS;
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.side !== allySide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      if (dist(u.x, u.y, cx, cy) <= R) grantTroopBuffShield(u);
+    }
+    for (const tw of state.towers) {
+      if (tw.hp <= 0 || tw.side !== allySide) continue;
+      if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+      const ext = tw.kind === "king" ? 34 : 26;
+      if (dist(tw.x, tw.y, cx, cy) <= R + ext) grantTowerBuffShield(tw);
+    }
+  }
+
+  /**
+   * @param {"player"|"enemy"} side
+   * @returns {boolean}
+   */
+  function runMirrorReplay(state, side, innerCard, px, py) {
+    if (!innerCard || innerCard === "mirror") return false;
+    if (innerCard === "builder") innerCard = "build";
+    const pt = state.troops.length;
+    const pb = (state.buildings || []).length;
+    if (innerCard === "goblin_drill" || innerCard === "goblin_drill_army") {
+      const foeSide = side === "player" ? "enemy" : "player";
+      let gx = px;
+      let gy = py;
+      if (!canDeploy(state, foeSide, gx, gy)) {
+        const sn = snapToDeployable(state, foeSide, gx, gy);
+        if (!sn) return false;
+        gx = sn.x;
+        gy = sn.y;
+      }
+      spawnUnitOrBuildingNow(state, side, innerCard, gx, gy);
+      applyMirrorShieldsAfterSpawn(state, innerCard, pt, pb, false);
+      return true;
+    }
+    if (isSpellCardId(innerCard)) {
+      let x = px;
+      let y = py;
+      if (!spellInArena(x, y)) {
+        x = clamp(px, 16, W - 16);
+        y = clamp(py, 16, H - 16);
+      }
+      replayMirroredSpell(state, innerCard, x, y, side);
+      applyMirrorShieldsAfterSpawn(state, innerCard, pt, pb, true);
+      return true;
+    }
+    let gx = px;
+    let gy = py;
+    if (!canDeploy(state, side, gx, gy)) {
+      const sn = snapToDeployable(state, side, gx, gy);
+      if (!sn) return false;
+      gx = sn.x;
+      gy = sn.y;
+    }
+    spawnUnitOrBuildingNow(state, side, innerCard, gx, gy);
+    applyMirrorShieldsAfterSpawn(state, innerCard, pt, pb, false);
+    return true;
+  }
+
   /** Drop expired zones; keep stuns synced for anyone still inside an active zone. */
   function updateFreezeZones(state, now) {
     if (!state.freezeZones || !state.freezeZones.length) return;
@@ -4106,6 +6011,14 @@
         const ext = tw.kind === "king" ? 34 : 26;
         if (dist(tw.x, tw.y, z.cx, z.cy) <= R + ext) {
           tw.stunUntil = Math.max(tw.stunUntil || 0, stunT);
+        }
+      }
+      for (const bd of state.buildings || []) {
+        if (bd.hp <= 0 || bd.side === z.side) continue;
+        if (bd.kind !== "prince_tower") continue;
+        if (dist(bd.x, bd.y, z.cx, z.cy) <= R + bd.radius * 1.05) {
+          bd.stunUntil = Math.max(bd.stunUntil || 0, stunT);
+          clearPrinceTowerAggro(bd);
         }
       }
     }
@@ -4293,18 +6206,24 @@
     if (
       card !== "mini_pekka" &&
       card !== "knight" &&
+      card !== "assassin" &&
       card !== "skeleton" &&
       card !== "bomber" &&
       card !== "goblins" &&
       card !== "goblin_gang" &&
+      card !== "archers_army" &&
       card !== "archers" &&
       card !== "skarmy" &&
+      card !== "bat_army" &&
       card !== "mega_army" &&
       card !== "arrows" &&
       card !== "fireball" &&
+      card !== "goblin_barrel" &&
+      card !== "rocket" &&
       card !== "goblin_hut" &&
       card !== "cannon" &&
       card !== "garrison_tower" &&
+      card !== "luxury_hotel" &&
       card !== "tombstone" &&
       card !== "mega_goblin_army" &&
       card !== "zap" &&
@@ -4313,12 +6232,23 @@
       card !== "wizard" &&
       card !== "electro_wizard" &&
       card !== "mega_knight" &&
+      card !== "mega_knight_army" &&
       card !== "musketeer" &&
       card !== "chud" &&
       card !== "tung_tung_tung_sahur" &&
       card !== "heavenly_tung" &&
       card !== "bir_bir_patapins" &&
-      card !== "witch"
+      card !== "witch" &&
+      card !== "bats" &&
+      card !== "boberdino_crocodelo" &&
+      card !== "prince_tower" &&
+      card !== "shields" &&
+      card !== "rage" &&
+      card !== "nothing" &&
+      card !== "nothing_army" &&
+      card !== "goblin_drill" &&
+      card !== "goblin_drill_army" &&
+      card !== "build"
     )
       return;
     const cost = cardCost(card);
@@ -4328,6 +6258,7 @@
       const cy = clamp(yMir, 16, H - 16);
       state.enemyElixir = Math.max(0, state.enemyElixir - cost);
       applyArrowsStrike(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "arrows");
       return;
     }
     if (card === "fireball") {
@@ -4335,6 +6266,23 @@
       const cy = clamp(yMir, 16, H - 16);
       state.enemyElixir = Math.max(0, state.enemyElixir - cost);
       applyFireballStrike(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "fireball");
+      return;
+    }
+    if (card === "goblin_barrel") {
+      const cx = clamp(x, 16, W - 16);
+      const cy = clamp(yMir, 16, H - 16);
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      applyGoblinBarrelStrike(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "goblin_barrel");
+      return;
+    }
+    if (card === "rocket") {
+      const cx = clamp(x, 16, W - 16);
+      const cy = clamp(yMir, 16, H - 16);
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      applyRocketStrike(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "rocket");
       return;
     }
     if (card === "zap") {
@@ -4342,6 +6290,7 @@
       const cy = clamp(yMir, 16, H - 16);
       state.enemyElixir = Math.max(0, state.enemyElixir - cost);
       applyZapStrike(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "zap");
       return;
     }
     if (card === "freeze") {
@@ -4349,6 +6298,66 @@
       const cy = clamp(yMir, 16, H - 16);
       state.enemyElixir = Math.max(0, state.enemyElixir - cost);
       applyFreezeStrike(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "freeze");
+      return;
+    }
+    if (card === "shields") {
+      const cx = clamp(x, 16, W - 16);
+      const cy = clamp(yMir, 16, H - 16);
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      applyShieldBuffSpell(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "shields");
+      return;
+    }
+    if (card === "build") {
+      const cx = clamp(x, 16, W - 16);
+      const cy = clamp(yMir, 16, H - 16);
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      applyBuildRepairSpell(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "build");
+      return;
+    }
+    if (card === "rage") {
+      const cx = clamp(x, 16, W - 16);
+      const cy = clamp(yMir, 16, H - 16);
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      applyRageStrike(cx, cy, "enemy", state);
+      notifyLastPlayedCard(state, "enemy", "rage");
+      return;
+    }
+    if (card === "goblin_drill") {
+      let gx = clamp(x, 16, W - 16);
+      let gy = clamp(yMir, 16, H - 16);
+      const foe = drillDeployFoeSide("enemy");
+      if (!canDeploy(state, foe, gx, gy)) {
+        const sn = snapToDeployable(state, foe, gx, gy);
+        if (!sn) return;
+        gx = sn.x;
+        gy = sn.y;
+      }
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      startDrillDeployment(state, "enemy", gx, gy);
+      notifyLastPlayedCard(state, "enemy", "goblin_drill");
+      return;
+    }
+    if (card === "goblin_drill_army") {
+      let gx = clamp(x, 16, W - 16);
+      let gy = clamp(yMir, 16, H - 16);
+      const foe = drillDeployFoeSide("enemy");
+      if (!canDeploy(state, foe, gx, gy)) {
+        const sn = snapToDeployable(state, foe, gx, gy);
+        if (!sn) return;
+        gx = sn.x;
+        gy = sn.y;
+      }
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      startDrillArmyDeployments(state, "enemy", gx, gy);
+      notifyLastPlayedCard(state, "enemy", "goblin_drill_army");
+      return;
+    }
+    if (card === "nothing" || card === "nothing_army") {
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      notifyLastPlayedCard(state, "enemy", card);
       return;
     }
     const snapped = snapToDeployable(state, "enemy", x, yMir);
@@ -4472,14 +6481,54 @@
     const slot = state.selectedSlot;
     const card = state.hand[slot];
     if (!card) return false;
-    const cost = cardCost(card);
-    const inf = playerInfiniteElixir(state);
-    if (!inf && state.playerElixir < cost) return false;
-
     const hs = humanControlSide(state);
+    const inf = playerInfiniteElixir(state);
+    const cost = effectiveCardCost(state, card, hs);
+    if (!inf && (!Number.isFinite(cost) || state.playerElixir < cost)) return false;
 
     let px = x;
     let py = y;
+
+    if (card === "mirror") {
+      const inner =
+        hs === "player" ? state.lastPlayedBySide.player : state.lastPlayedBySide.enemy;
+      if (!inner || inner === "mirror") return false;
+      if (!runMirrorReplay(state, hs, inner, px, py)) return false;
+      if (!inf) state.playerElixir -= cost;
+      notifyLastPlayedCard(state, hs, inner);
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy(inner, px, py);
+      return true;
+    }
+
+    if (card === "shields") {
+      if (!spellInArena(px, py)) {
+        px = clamp(x, 16, W - 16);
+        py = clamp(y, 16, H - 16);
+      }
+      if (!inf) state.playerElixir -= cost;
+      applyShieldBuffSpell(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "shields");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy("shields", px, py);
+      return true;
+    }
+
+    if (card === "build") {
+      if (!spellInArena(px, py)) {
+        px = clamp(x, 16, W - 16);
+        py = clamp(y, 16, H - 16);
+      }
+      if (!inf) state.playerElixir -= cost;
+      applyBuildRepairSpell(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "build");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy("build", px, py);
+      return true;
+    }
 
     if (card === "arrows") {
       if (!spellInArena(px, py)) {
@@ -4488,6 +6537,7 @@
       }
       if (!inf) state.playerElixir -= cost;
       applyArrowsStrike(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "arrows");
       cyclePlayerHand(state, slot);
       state.selectedSlot = null;
       pushBattleDeploy(card, px, py);
@@ -4501,6 +6551,35 @@
       }
       if (!inf) state.playerElixir -= cost;
       applyFireballStrike(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "fireball");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy(card, px, py);
+      return true;
+    }
+
+    if (card === "goblin_barrel") {
+      if (!spellInArena(px, py)) {
+        px = clamp(x, 16, W - 16);
+        py = clamp(y, 16, H - 16);
+      }
+      if (!inf) state.playerElixir -= cost;
+      applyGoblinBarrelStrike(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "goblin_barrel");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy("goblin_barrel", px, py);
+      return true;
+    }
+
+    if (card === "rocket") {
+      if (!spellInArena(px, py)) {
+        px = clamp(x, 16, W - 16);
+        py = clamp(y, 16, H - 16);
+      }
+      if (!inf) state.playerElixir -= cost;
+      applyRocketStrike(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "rocket");
       cyclePlayerHand(state, slot);
       state.selectedSlot = null;
       pushBattleDeploy(card, px, py);
@@ -4514,6 +6593,7 @@
       }
       if (!inf) state.playerElixir -= cost;
       applyZapStrike(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "zap");
       cyclePlayerHand(state, slot);
       state.selectedSlot = null;
       pushBattleDeploy(card, px, py);
@@ -4527,6 +6607,76 @@
       }
       if (!inf) state.playerElixir -= cost;
       applyFreezeStrike(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "freeze");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy(card, px, py);
+      return true;
+    }
+
+    if (card === "rage") {
+      if (!spellInArena(px, py)) {
+        px = clamp(x, 16, W - 16);
+        py = clamp(y, 16, H - 16);
+      }
+      if (!inf) state.playerElixir -= cost;
+      applyRageStrike(px, py, hs, state);
+      notifyLastPlayedCard(state, hs, "rage");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy("rage", px, py);
+      return true;
+    }
+
+    if (card === "goblin_drill") {
+      const foe = drillDeployFoeSide(hs);
+      let dx = px;
+      let dy = py;
+      if (!spellInArena(dx, dy)) {
+        dx = clamp(x, 16, W - 16);
+        dy = clamp(y, 16, H - 16);
+      }
+      if (!canDeploy(state, foe, dx, dy)) {
+        const sn = snapToDeployable(state, foe, dx, dy);
+        if (!sn) return false;
+        dx = sn.x;
+        dy = sn.y;
+      }
+      if (!inf) state.playerElixir -= cost;
+      startDrillDeployment(state, hs, dx, dy);
+      notifyLastPlayedCard(state, hs, "goblin_drill");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy("goblin_drill", dx, dy);
+      return true;
+    }
+
+    if (card === "goblin_drill_army") {
+      const foe = drillDeployFoeSide(hs);
+      let ax = px;
+      let ay = py;
+      if (!spellInArena(ax, ay)) {
+        ax = clamp(x, 16, W - 16);
+        ay = clamp(y, 16, H - 16);
+      }
+      if (!canDeploy(state, foe, ax, ay)) {
+        const sn = snapToDeployable(state, foe, ax, ay);
+        if (!sn) return false;
+        ax = sn.x;
+        ay = sn.y;
+      }
+      if (!inf) state.playerElixir -= cost;
+      startDrillArmyDeployments(state, hs, ax, ay);
+      notifyLastPlayedCard(state, hs, "goblin_drill_army");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy("goblin_drill_army", ax, ay);
+      return true;
+    }
+
+    if (card === "nothing" || card === "nothing_army") {
+      if (!inf) state.playerElixir -= cost;
+      notifyLastPlayedCard(state, hs, card);
       cyclePlayerHand(state, slot);
       state.selectedSlot = null;
       pushBattleDeploy(card, px, py);
@@ -4619,7 +6769,12 @@
     if (state.remoteEmote && state.time >= state.remoteEmote.until) state.remoteEmote = null;
     if (state.arrowFx && state.time >= state.arrowFx.until) state.arrowFx = null;
     if (state.fireballFx && state.time >= state.fireballFx.until) state.fireballFx = null;
+    if (state.goblinBarrelFx && state.time >= state.goblinBarrelFx.until) state.goblinBarrelFx = null;
+    if (state.rocketFx && state.time >= state.rocketFx.until) state.rocketFx = null;
     if (state.zapFx && state.time >= state.zapFx.until) state.zapFx = null;
+    if (state.rageFx && state.time >= state.rageFx.until) state.rageFx = null;
+    if (state.shieldBuffFx && state.time >= state.shieldBuffFx.until) state.shieldBuffFx = null;
+    if (state.buildRepairFx && state.time >= state.buildRepairFx.until) state.buildRepairFx = null;
     if (state.wizardSplashFx && state.wizardSplashFx.length) {
       state.wizardSplashFx = state.wizardSplashFx.filter((w) => state.time < w.until);
     }
@@ -4638,7 +6793,14 @@
       MAX_ELIXIR,
       state.enemyElixir + ELIXIR_PER_SEC * elixirMult * dt,
     );
+    if (trainingInfiniteTowerHp(state)) {
+      for (const tw of state.towers || []) {
+        if (tw && tw.hp > 0 && typeof tw.maxHp === "number") tw.hp = tw.maxHp;
+      }
+    }
     processPendingDeploys(state);
+    updateDrillDeployments(state);
+    updateGoblinDrillDecay(dt, state);
     updateWitchSpawns(dt, state);
     updateBirPatapinEnrage(state);
     updateHeavenlyTungRage(dt, state);
@@ -4649,6 +6811,7 @@
 
     updateGoblinHutDecay(dt, state);
     updateHutSpawns(dt, state);
+    updateGoblinDrillSpawns(dt, state);
     updateTombstoneDecay(dt, state);
     updateCannonDecay(dt, state);
     updateGarrisonTowerDecay(dt, state);
@@ -4658,7 +6821,14 @@
       updateMegaKnight(u, dt, state, now);
     }
     for (const u of state.troops) {
+      const ax = u.type === "assassin" ? u.x : 0;
+      const ay = u.type === "assassin" ? u.y : 0;
       updateTroopNavAndMove(dt, u, state);
+      if (u.type === "assassin") {
+        const moved = (u.x - ax) ** 2 + (u.y - ay) ** 2 > 0.015;
+        updateAssassinChargeWindup(dt, u, state, moved);
+      }
+      if (u.type === "chud") updateChudEvoPulse(dt, u, state);
     }
     resolveTroopCollisions(state.troops);
     resolveTroopBuildingCollisions(state.troops, state.buildings);
@@ -4666,7 +6836,8 @@
     updateMegaGoblinArmyHutSpawns(dt, state);
     for (const u of state.troops) {
       if (troopActsOnBattlefield(u) && u.attackT > 0) {
-        u.attackT -= dt;
+        const rMul = troopRageMultiplier(u, now);
+        u.attackT -= dt * rMul;
         if (u.attackT < 0) u.attackT = 0;
       }
     }
@@ -4687,6 +6858,7 @@
     }
     for (const bd of state.buildings || []) {
       if (bd.kind === "cannon") cannonBuildingShoot(state, bd, now);
+      else if (bd.kind === "prince_tower") princeTowerBuildingShoot(state, bd, now);
     }
 
     processMegaGoblinArmyDeathSpawns(state);
@@ -4860,15 +7032,41 @@
     ctx.globalAlpha = 1;
 
     const pct = Math.max(0, tower.hp / tower.maxHp);
-    const barY = tower.side === "enemy" ? py + th + 5 : py - 12;
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(px, barY, tw, 6);
-    ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
-    ctx.fillRect(px, barY, tw * pct, 6);
+    const smax = tower.shieldMax != null ? tower.shieldMax : 0;
+    const shp = tower.shieldHp != null ? tower.shieldHp : 0;
+    const drawSh = smax > 0 && shp > 0;
+    if (tower.side === "enemy") {
+      let y = py + th + 5;
+      if (drawSh) {
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(px, y, tw, 6);
+        ctx.fillStyle = "rgba(56,189,248,0.95)";
+        ctx.fillRect(px, y, tw * (shp / smax), 6);
+        y += 8;
+      }
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, y, tw, 6);
+      ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
+      ctx.fillRect(px, y, tw * pct, 6);
+    } else {
+      const hpY = py - 12;
+      if (drawSh) {
+        const sy = py - 22;
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(px, sy, tw, 6);
+        ctx.fillStyle = "rgba(56,189,248,0.95)";
+        ctx.fillRect(px, sy, tw * (shp / smax), 6);
+      }
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, hpY, tw, 6);
+      ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
+      ctx.fillRect(px, hpY, tw * pct, 6);
+    }
   }
 
   function pickWalkImage(frames, wf) {
-    const n = frames.length;
+    const n = frames && frames.length;
+    if (!n) return /** @type {HTMLImageElement | null} */ (null);
     const i0 = ((wf % n) + n) % n;
     for (let k = 0; k < n; k++) {
       const im = frames[(i0 + k) % n];
@@ -4889,6 +7087,19 @@
         slashW: 2.6,
         arcR: 18,
         fallback: "#3b82f6",
+      };
+    }
+    if (u.type === "assassin") {
+      return {
+        /** Drawn in {@link drawUnit} — knight body + Mini P.E.K.K.A head, purple fusion. */
+        img: null,
+        s: DRAW_PX_UNIT,
+        atkMax: u.assassinCharging ? 0.22 : 0.32,
+        lunge: u.assassinCharging ? 10 : 8,
+        tilt: 0.3,
+        slashW: u.assassinCharging ? 2.7 : 2.4,
+        arcR: u.assassinCharging ? 19 : 17,
+        fallback: "#7c3aed",
       };
     }
     if (u.type === "tung_tung_tung_sahur") {
@@ -5071,6 +7282,30 @@
         fallback: "#7dd3fc",
       };
     }
+    if (u.type === "bat") {
+      return {
+        img: pickWalkImage(SPRITES.batWalk, wf),
+        s: 11,
+        atkMax: 0.14,
+        lunge: 4,
+        tilt: 0.35,
+        slashW: 1.1,
+        arcR: 9,
+        fallback: "#7c3aed",
+      };
+    }
+    if (u.type === "boberdino_crocodelo") {
+      return {
+        img: SPRITES.boberdinoCrocodelo,
+        s: 60,
+        atkMax: 0,
+        lunge: 0,
+        tilt: 0,
+        slashW: 1,
+        arcR: 12,
+        fallback: "#94a3b8",
+      };
+    }
     return {
       img: pickWalkImage(SPRITES.skelWalk, wf),
       s: DRAW_PX_SKEL,
@@ -5124,7 +7359,7 @@
     let lx = faceX * lunge;
     let ly = faceY * lunge;
     const tilt = swing * (u.side === "player" ? -1 : 1) * vis.tilt;
-    let drawY = u.y;
+    let drawY = u.flying ? u.y - 12 : u.y;
     if (u.type === "mega_knight" && u.mkJumpPhase === 1 && u.mkWindupT > 0) {
       const w = clamp(1 - u.mkWindupT / MEGA_KNIGHT_WINDUP, 0, 1);
       // Wind-up: stand still and compress slightly before launch.
@@ -5156,6 +7391,31 @@
       ctx.restore();
     }
 
+    if (u.hp > 0 && u.type === "assassin" && u.assassinCharging && state) {
+      ctx.save();
+      const pulse = 0.55 + 0.14 * Math.sin((state.time || 0) * 11);
+      ctx.globalAlpha = 0.26 + 0.2 * pulse;
+      ctx.fillStyle = `rgba(124, 58, 237, ${0.35 + 0.25 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(u.x, drawY, u.radius + 15 + pulse * 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.72 + 0.2 * pulse;
+      ctx.strokeStyle = `rgba(196, 181, 253, ${0.92})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(u.x, drawY, u.radius + 18 + pulse * 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.35 * pulse;
+      ctx.strokeStyle = "rgba(91, 33, 182, 0.8)";
+      ctx.lineWidth = 1.25;
+      ctx.setLineDash([5, 6]);
+      ctx.beginPath();
+      ctx.arc(u.x, drawY, u.radius + 24, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     ctx.save();
     ctx.translate(u.x + lx, drawY + ly);
     ctx.rotate(tilt);
@@ -5164,9 +7424,56 @@
     ctx.shadowBlur = 6;
     ctx.shadowOffsetY = 3;
     const smooth = ctx.imageSmoothingEnabled;
-    ctx.imageSmoothingEnabled = false;
-    if (vis.img && vis.img.complete && vis.img.naturalWidth > 0) {
+    ctx.imageSmoothingEnabled = u.type === "boberdino_crocodelo";
+    if (u.type === "assassin") {
+      const wf = walkFrameIndexForTroop(state, u);
+      const mini = pickWalkImage(SPRITES.miniWalk, wf);
+      const knight = pickWalkImage(SPRITES.knightWalk, wf);
+      const s = vis.s;
+      const headH = s * 0.4;
+      /** Purple reads as texture (multiply) instead of flat source-atop wash. */
+      const drawClipTexturePurple = (img, clipTop, clipH, multiplyRgb, strength) => {
+        if (!img || !img.complete || !img.naturalWidth) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-s / 2, clipTop, s, clipH);
+        ctx.clip();
+        ctx.drawImage(img, -s / 2, -s / 2, s, s);
+        ctx.globalCompositeOperation = "multiply";
+        ctx.fillStyle = multiplyRgb;
+        ctx.globalAlpha = strength;
+        ctx.fillRect(-s / 2, -s / 2, s, s);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      };
+      if (knight && knight.complete && knight.naturalWidth > 0) {
+        drawClipTexturePurple(knight, -s / 2 + headH, s - headH, "rgb(155, 115, 215)", 0.38);
+      }
+      if (mini && mini.complete && mini.naturalWidth > 0) {
+        drawClipTexturePurple(mini, -s / 2, headH, "rgb(175, 135, 235)", 0.32);
+      }
+      if (
+        !(knight && knight.complete && knight.naturalWidth > 0) &&
+        !(mini && mini.complete && mini.naturalWidth > 0)
+      ) {
+        ctx.fillStyle = vis.fallback;
+        ctx.beginPath();
+        ctx.arc(0, 0, u.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (vis.img && vis.img.complete && vis.img.naturalWidth > 0) {
+      if (u.type === "boberdino_crocodelo") ctx.rotate(ang);
       ctx.drawImage(vis.img, -vis.s / 2, -vis.s / 2, vis.s, vis.s);
+    } else if (u.type === "boberdino_crocodelo") {
+      ctx.rotate(ang);
+      ctx.fillStyle = vis.fallback;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, u.radius, u.radius * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#475569";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
     } else {
       ctx.fillStyle = vis.fallback;
       ctx.beginPath();
@@ -5196,6 +7503,25 @@
       ctx.fillStyle = "rgba(254,243,199,0.45)";
       ctx.fillRect(hx - 8, hy + 2, 4, 3);
     }
+    if (u.type === "bomber" && u.bomberEvo) {
+      const capY = -vis.s * 0.36;
+      const rw = vis.s * 0.24;
+      const rh = vis.s * 0.12;
+      ctx.fillStyle = "#6d28d9";
+      ctx.fillRect(-rw * 1.15, capY + rh * 0.2, rw * 2.3, rh * 0.7);
+      ctx.strokeStyle = "#4c1d95";
+      ctx.lineWidth = 0.9;
+      ctx.strokeRect(-rw * 1.15, capY + rh * 0.2, rw * 2.3, rh * 0.7);
+      ctx.fillStyle = "#7c3aed";
+      ctx.beginPath();
+      ctx.ellipse(0, capY, rw, rh, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(196, 181, 253, 0.55)";
+      ctx.beginPath();
+      ctx.ellipse(-rw * 0.35, capY - rh * 0.15, rw * 0.2, rh * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     {
       const hs = state ? humanControlSide(state) : "player";
       const foeStunned =
@@ -5210,21 +7536,36 @@
         ctx.fillRect(-vis.s / 2 - 3, -vis.s / 2 - 3, vis.s + 6, vis.s + 6);
         ctx.restore();
       }
+      if (
+        state &&
+        u.hp > 0 &&
+        troopActsOnBattlefield(u) &&
+        u.rageUntil != null &&
+        state.time < u.rageUntil
+      ) {
+        ctx.save();
+        ctx.globalCompositeOperation = "source-atop";
+        ctx.fillStyle = "rgba(220, 38, 38, 0.26)";
+        ctx.fillRect(-vis.s / 2 - 3, -vis.s / 2 - 3, vis.s + 6, vis.s + 6);
+        ctx.restore();
+      }
     }
     ctx.imageSmoothingEnabled = smooth;
     ctx.restore();
 
+    /** Guard-style cyan bubble — skeleton guards plus Shields spell / Mirror buff on any troop. Scales with draw size & hitbox radius. */
     if (
       u.hp > 0 &&
-      u.type === "skeleton_guard" &&
       state &&
       (u.shieldHp ?? 0) > 0 &&
       (u.shieldMax ?? 0) > 0
     ) {
       ctx.save();
       const pulse = 0.92 + 0.07 * Math.sin((state.time || 0) * 5.5);
-      const rx = (vis.s * 0.52 + 7) * pulse;
-      const ry = (vis.s * 0.48 + 6) * pulse;
+      const hull = Math.max(vis.s, (u.radius > 0 ? u.radius : 4) * 2.55);
+      const rx = (hull * 0.52 + 7) * pulse;
+      const ry = (hull * 0.48 + 6) * pulse;
+      const scl = Math.min(1.45, hull / 24);
       ctx.globalAlpha = 0.26;
       ctx.fillStyle = "rgba(56,189,248,0.75)";
       ctx.beginPath();
@@ -5232,7 +7573,7 @@
       ctx.fill();
       ctx.globalAlpha = 0.88;
       ctx.strokeStyle = "rgba(186,230,253,0.98)";
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = Math.max(1.6, 2.2 * scl);
       ctx.setLineDash([5, 5]);
       ctx.beginPath();
       ctx.ellipse(u.x, drawY - 2, rx, ry, 0, 0, Math.PI * 2);
@@ -5240,7 +7581,7 @@
       ctx.setLineDash([]);
       ctx.globalAlpha = 0.45;
       ctx.strokeStyle = "rgba(224,242,254,0.95)";
-      ctx.lineWidth = 1.1;
+      ctx.lineWidth = Math.max(0.95, 1.1 * scl);
       ctx.beginPath();
       ctx.ellipse(u.x, drawY - 3, rx * 0.72, ry * 0.68, 0, 0, Math.PI * 2);
       ctx.stroke();
@@ -5274,6 +7615,8 @@
       ctx.strokeStyle =
         u.type === "mini_pekka"
           ? "rgba(147,197,253,0.95)"
+          : u.type === "assassin"
+            ? "rgba(192,132,252,0.95)"
           : u.type === "tung_tung_tung_sahur"
             ? "rgba(234,179,8,0.95)"
             : u.type === "heavenly_tung"
@@ -5286,6 +7629,8 @@
                 ? "rgba(251,191,36,0.95)"
                 : u.type === "chud" || u.type === "mega_goblin_army"
                 ? "rgba(134,239,172,0.95)"
+                : u.type === "bat"
+                  ? "rgba(167,139,250,0.95)"
                 : u.type === "bomber"
                   ? "rgba(56,189,248,0.92)"
                   : "rgba(255,255,255,0.9)";
@@ -5306,9 +7651,12 @@
 
     ctx.globalAlpha = 1;
 
-    if (((u.hp > 0 && !patapinGhostActive(u)) || heavenlyTungRageActive(u)) && u.maxHp > 1) {
+    if (
+      ((u.hp > 0 && !patapinGhostActive(u)) || heavenlyTungRageActive(u)) &&
+      (u.maxHp > 1 || ((u.shieldMax ?? 0) > 0 && (u.shieldHp ?? 0) > 0))
+    ) {
       const bw =
-        u.type === "mini_pekka"
+        u.type === "mini_pekka" || u.type === "assassin"
           ? 34
           : u.type === "knight"
             ? 30
@@ -5449,14 +7797,15 @@
         ctx.arc(r * 2.35, 0, r * 0.35, 0, Math.PI * 2);
         ctx.fill();
       } else if (kind === "bomber") {
-        ctx.fillStyle = "#0f172a";
-        ctx.strokeStyle = "#020617";
+        const evo = !!p.bomberEvo;
+        ctx.fillStyle = evo ? "#3b0764" : "#0f172a";
+        ctx.strokeStyle = evo ? "#581c87" : "#020617";
         ctx.lineWidth = 1.1;
         ctx.beginPath();
         ctx.arc(0, r * 0.15, r * 1.1, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        ctx.strokeStyle = "#facc15";
+        ctx.strokeStyle = evo ? "#e9d5ff" : "#facc15";
         ctx.lineWidth = 0.8;
         ctx.setLineDash([1.2, 1.2]);
         ctx.beginPath();
@@ -5464,10 +7813,20 @@
         ctx.lineTo(r * 0.35, -r * 1.35);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = "rgba(250,250,250,0.25)";
+        ctx.fillStyle = evo ? "rgba(216,180,254,0.45)" : "rgba(250,250,250,0.25)";
         ctx.beginPath();
         ctx.arc(-r * 0.4, -r * 0.2, r * 0.28, 0, Math.PI * 2);
         ctx.fill();
+        if (evo) {
+          ctx.shadowColor = "rgba(168,85,247,0.85)";
+          ctx.shadowBlur = 10;
+          ctx.strokeStyle = "rgba(196,181,253,0.9)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(0, r * 0.15, r * 1.22, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
       } else if (kind === "cannon_ball") {
         ctx.fillStyle = "#27272a";
         ctx.strokeStyle = "#18181b";
@@ -5480,6 +7839,56 @@
         ctx.beginPath();
         ctx.arc(-r * 0.35, -r * 0.35, r * 0.35, 0, Math.PI * 2);
         ctx.fill();
+      } else if (kind === "goblin_barrel") {
+        ctx.fillStyle = "#78350f";
+        ctx.strokeStyle = "#451a03";
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.ellipse(0, r * 0.1, r * 1.5, r * 1.05, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#a16207";
+        ctx.strokeStyle = "#713f12";
+        ctx.beginPath();
+        ctx.moveTo(r * 0.85, -r * 0.55);
+        ctx.lineTo(-r * 1.15, -r * 0.15);
+        ctx.lineTo(-r * 1.15, r * 0.45);
+        ctx.lineTo(r * 0.85, r * 0.15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "rgba(253,230,138,0.85)";
+        ctx.beginPath();
+        ctx.arc(r * 0.45, -r * 0.15, r * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (kind === "rocket_spell") {
+        ctx.shadowColor = "rgba(248,113,113,0.92)";
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = "#dc2626";
+        ctx.strokeStyle = "#991b1b";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(r * 2.15, 0);
+        ctx.lineTo(-r * 1.1, r * 0.62);
+        ctx.lineTo(-r * 1.45, 0);
+        ctx.lineTo(-r * 1.1, -r * 0.62);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(254,226,226,0.9)";
+        ctx.beginPath();
+        ctx.arc(r * -0.15, r * -0.1, r * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(254,249,244,0.75)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-r * 2.2, 0);
+        ctx.lineTo(-r * 3.35, -r * 0.08);
+        ctx.lineTo(-r * 2.95, -r * 0.28);
+        ctx.lineTo(-r * 4.1, -r * 0.52);
+        ctx.lineTo(-r * 3.95, -r * 0.88);
+        ctx.stroke();
       } else if (kind === "fireball_spell") {
         ctx.shadowColor = "rgba(251,146,60,0.95)";
         ctx.shadowBlur = 14;
@@ -5516,6 +7925,34 @@
       }
       ctx.restore();
     }
+  }
+
+  function drawGoblinDrillBurrowFx(ctx, state) {
+    const dd = state.drillDeployments;
+    if (!dd || !dd.length) return;
+    ctx.save();
+    for (const d of dd) {
+      ctx.setLineDash([5, 6]);
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = "rgba(180, 83, 9, 0.78)";
+      ctx.beginPath();
+      ctx.moveTo(d.sx, d.sy);
+      ctx.lineTo(d.tx, d.ty);
+      ctx.stroke();
+      const dur = d.travelSec > 1e-6 ? d.travelSec : 1;
+      const u = clamp((state.time - d.startAt) / dur, 0, 1);
+      const bx = d.sx + (d.tx - d.sx) * u;
+      const by = d.sy + (d.ty - d.sy) * u;
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(245, 158, 11, 0.92)";
+      ctx.strokeStyle = "rgba(69, 26, 3, 0.92)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(bx, by, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawArrowSpellFx(ctx, state) {
@@ -5582,6 +8019,38 @@
     ctx.restore();
   }
 
+  function drawRocketSpellFx(ctx, state) {
+    const f = state.rocketFx;
+    if (!f || state.time > f.until) return;
+    const cx = f.cx;
+    const cy = f.cy;
+    const t = clamp((f.until - state.time) / 0.52, 0, 1);
+    const pulse = ROCKET_SPELL_RADIUS * (0.52 + 0.48 * (1 - t));
+    ctx.save();
+    ctx.globalAlpha = 0.42 + 0.48 * t;
+    ctx.strokeStyle = "#f87171";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(248,113,113,0.92)";
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + state.time * 8;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * (pulse * 0.12), cy + Math.sin(a) * (pulse * 0.12));
+      ctx.lineTo(cx + Math.cos(a) * pulse, cy + Math.sin(a) * pulse);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(220,38,38,0.22)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawWizardSplashFx(ctx, state) {
     const list = state.wizardSplashFx;
     if (!list || !list.length) return;
@@ -5629,6 +8098,30 @@
         ctx.restore();
         continue;
       }
+      if (kind === "boberdino_mini") {
+        const tmini = clamp((f.until - state.time) / 0.32, 0, 1);
+        const pm = rad * (0.52 + 0.48 * (1 - tmini));
+        ctx.save();
+        ctx.globalAlpha = 0.36 + 0.5 * tmini;
+        ctx.strokeStyle = "rgba(251,146,60,0.95)";
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([4, 5]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, pm, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(253,224,71,0.16)";
+        ctx.beginPath();
+        ctx.arc(cx, cy, pm * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(234,88,12,0.85)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, pm * 0.78, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        continue;
+      }
       if (kind === "tung_boom") {
         ctx.save();
         const img = SPRITES.tungBoom;
@@ -5652,6 +8145,8 @@
           ? "#f59e0b"
           : kind === "mega_ground"
             ? "#eab308"
+          : kind === "bomber_evo" || kind === "chud_evo"
+            ? "#a855f7"
             : kind === "witch"
               ? "#15803d"
               : kind === "electro_hit"
@@ -5662,6 +8157,8 @@
           ? "rgba(253,224,71,0.94)"
           : kind === "mega_ground"
             ? "rgba(254,240,138,0.9)"
+          : kind === "bomber_evo" || kind === "chud_evo"
+            ? "rgba(233,213,255,0.92)"
             : kind === "witch"
               ? "rgba(187,247,208,0.92)"
               : kind === "electro_hit"
@@ -5672,6 +8169,8 @@
           ? "rgba(245,158,11,0.22)"
           : kind === "mega_ground"
             ? "rgba(234,179,8,0.2)"
+          : kind === "bomber_evo" || kind === "chud_evo"
+            ? "rgba(147,51,234,0.22)"
             : kind === "witch"
               ? "rgba(34,197,94,0.2)"
               : kind === "electro_hit"
@@ -5760,6 +8259,109 @@
     ctx.fillStyle = "rgba(186,230,253,0.35)";
     ctx.beginPath();
     ctx.arc(cx, cy, pulse * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawShieldSpellFx(ctx, state) {
+    const f = state.shieldBuffFx;
+    if (!f || state.time >= f.until) return;
+    const cx = f.cx;
+    const cy = f.cy;
+    const t = clamp((f.until - state.time) / 0.42, 0, 1);
+    const pulse = SHIELDS_SPELL_RADIUS * (0.45 + 0.55 * t);
+    ctx.save();
+    ctx.globalAlpha = 0.38 + 0.45 * t;
+    ctx.strokeStyle = "rgba(45,212,191,0.92)";
+    ctx.lineWidth = 2.8;
+    ctx.setLineDash([8, 5]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(167,243,208,0.55)";
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBuildRepairSpellFx(ctx, state) {
+    const f = state.buildRepairFx;
+    if (!f || state.time >= f.until) return;
+    const cx = f.cx;
+    const cy = f.cy;
+    const t = clamp((f.until - state.time) / 0.48, 0, 1);
+    const pulse = ARROWS_SPELL_RADIUS * (0.55 + 0.45 * (1 - t));
+    ctx.save();
+    ctx.globalAlpha = 0.32 + 0.42 * t;
+    ctx.strokeStyle = "rgba(34,197,94,0.9)";
+    ctx.lineWidth = 2.85;
+    ctx.setLineDash([9, 6]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(167,243,208,0.65)";
+    ctx.lineWidth = 1.35;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(187,247,208,0.18)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawRageSpellFx(ctx, state) {
+    const f = state.rageFx;
+    if (!f || state.time >= f.until) return;
+    const cx = f.cx;
+    const cy = f.cy;
+    const t = clamp((f.until - state.time) / 0.42, 0, 1);
+    const pulse = RAGE_SPELL_RADIUS * (0.45 + 0.55 * t);
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.5 * t;
+    ctx.strokeStyle = "rgba(249,115,22,0.95)";
+    ctx.lineWidth = 2.85;
+    ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(254,215,170,0.75)";
+    ctx.lineWidth = 1.35;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(251,146,60,0.12)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawGoblinBarrelLandFx(ctx, state) {
+    const f = state.goblinBarrelFx;
+    if (!f || state.time >= f.until) return;
+    const cx = f.cx;
+    const cy = f.cy;
+    const t = clamp((f.until - state.time) / 0.5, 0, 1);
+    const pulse = 36 * (0.5 + 0.5 * (1 - t));
+    ctx.save();
+    ctx.globalAlpha = 0.32 + 0.4 * t;
+    ctx.strokeStyle = "rgba(161,98,7,0.9)";
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([5, 6]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(253,230,138,0.22)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.55, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -5854,6 +8456,117 @@
       ctx.globalAlpha = 1;
       const pct = Math.max(0, b.hp / b.maxHp);
       const barY = b.side === "enemy" ? py + h + 6 : py - 12;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, barY, w, 5);
+      ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
+      ctx.fillRect(px, barY, w * pct, 5);
+      return;
+    }
+    if (b.kind === "luxury_hotel") {
+      const w = 46;
+      const h = 40;
+      const px = b.x - w / 2;
+      const py = b.y - h / 2;
+      if (b.hp <= 0) ctx.globalAlpha = 0.28;
+      ctx.save();
+      ctx.fillStyle = "#fef3c7";
+      ctx.strokeStyle = "#b45309";
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(px, py + 8, w, h - 8);
+      ctx.strokeRect(px, py + 8, w, h - 8);
+      ctx.fillStyle = "#fde68a";
+      for (let i = 0; i < 4; i++) {
+        const bx = px + 5 + i * 10;
+        ctx.fillRect(bx, py + 2, 7, 10);
+        ctx.strokeStyle = "#d97706";
+        ctx.strokeRect(bx, py + 2, 7, 10);
+      }
+      ctx.fillStyle = "#fbbf24";
+      ctx.fillRect(px + 8, py + 20, 30, 12);
+      ctx.strokeStyle = "#b45309";
+      ctx.strokeRect(px + 8, py + 20, 30, 12);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      const pct = Math.max(0, b.hp / b.maxHp);
+      const barY = b.side === "enemy" ? py + h + 6 : py - 12;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, barY, w, 5);
+      ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
+      ctx.fillRect(px, barY, w * pct, 5);
+      return;
+    }
+    if (b.kind === "prince_tower") {
+      const tw = 38;
+      const th = 44;
+      const px = b.x - tw / 2;
+      const py = b.y - th / 2;
+      if (b.hp <= 0) ctx.globalAlpha = 0.28;
+      ctx.save();
+      ctx.shadowColor = "rgba(88,28,135,0.45)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 3;
+      const img = SPRITES.towerPrincess;
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.globalAlpha = 0.92;
+        ctx.drawImage(img, px, py, tw, th);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = "#5b4a6e";
+        ctx.fillRect(px, py, tw, th);
+        ctx.strokeStyle = "#7c3aed";
+        ctx.strokeRect(px, py, tw, th);
+      }
+      const now = state ? state.time : 0;
+      const hs = state ? humanControlSide(state) : "player";
+      if (b.hp > 0 && state && b.stunUntil != null && now < b.stunUntil && b.side !== hs) {
+        ctx.globalCompositeOperation = "source-atop";
+        ctx.fillStyle = "rgba(6, 182, 212, 0.4)";
+        ctx.fillRect(px, py, tw, th);
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      const pct = Math.max(0, b.hp / b.maxHp);
+      const barY = b.side === "enemy" ? py + th + 6 : py - 12;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, barY, tw, 5);
+      ctx.fillStyle = pct > 0.35 ? "#a78bfa" : "#f87171";
+      ctx.fillRect(px, barY, tw * pct, 5);
+      return;
+    }
+    if (b.kind === "goblin_drill") {
+      const w = 36;
+      const h = 26;
+      const px = b.x - w / 2;
+      const py = b.y - h / 2;
+      ctx.save();
+      if (b.hp <= 0) ctx.globalAlpha = 0.28;
+      ctx.fillStyle = "#431407";
+      ctx.strokeStyle = "#7c2d12";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(b.x, py + h * 0.55, w * 0.45, h * 0.35, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#92400e";
+      ctx.strokeStyle = "#451a03";
+      ctx.fillRect(px + 6, py, w - 12, h);
+      ctx.strokeRect(px + 6, py, w - 12, h);
+      ctx.fillStyle = "#1c1917";
+      ctx.beginPath();
+      ctx.rect(b.x - 5, py + h * 0.35, 10, h * 0.45);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(251,191,36,0.7)";
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(b.x - w * 0.35, py + h);
+      ctx.lineTo(b.x, py + h + 5);
+      ctx.lineTo(b.x + w * 0.35, py + h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      const pct = Math.max(0, b.hp / b.maxHp);
+      const barY = b.side === "enemy" ? py + h + 8 : py - 10;
       ctx.fillStyle = "rgba(0,0,0,0.55)";
       ctx.fillRect(px, barY, w, 5);
       ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
@@ -6030,11 +8743,23 @@
 
       if (u.meleeRange != null && !isRangedTroopType(u)) {
         const mr = u.meleeRange + MELEE_REACH_BONUS;
-        ctx.strokeStyle = `rgba(${col}, 0.5)`;
-        ctx.lineWidth = 1.25;
+        ctx.strokeStyle =
+          u.type === "bat"
+            ? "rgba(167, 139, 250, 0.65)"
+            : `rgba(${col}, 0.5)`;
+        ctx.lineWidth = u.type === "bat" ? 1.4 : 1.25;
         ctx.beginPath();
         ctx.arc(u.x, u.y, mr, 0, Math.PI * 2);
         ctx.stroke();
+        if (u.type === "bat") {
+          ctx.setLineDash([2, 4]);
+          ctx.strokeStyle = "rgba(124, 58, 237, 0.35)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(u.x, u.y, mr + LOCK_LEASH_EXTRA * 0.5 + 8, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([5, 5]);
+        }
       } else if (u.meleeRange != null && isRangedTroopType(u)) {
         const mr = u.meleeRange + MELEE_REACH_BONUS;
         ctx.strokeStyle = `rgba(${col}, 0.28)`;
@@ -6085,6 +8810,21 @@
       }
 
       hpLine(u.x, u.y - u.radius - 2, u);
+      if (u.type === "bat") {
+        const tag = "BAT · aerial melee";
+        ctx.setLineDash([]);
+        ctx.font = "600 7px ui-monospace,monospace";
+        const tw = ctx.measureText(tag).width + 4;
+        const px = u.x - tw / 2;
+        const py = u.y + u.radius + 5;
+        ctx.fillStyle = "rgba(76, 29, 149, 0.88)";
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.55)";
+        ctx.lineWidth = 0.85;
+        ctx.fillRect(px, py - 1, tw, 10);
+        ctx.strokeRect(px, py - 1, tw, 10);
+        ctx.fillStyle = "#f5f3ff";
+        ctx.fillText(tag, u.x, py + 7);
+      }
     }
 
     for (const tw of state.towers) {
@@ -6115,7 +8855,21 @@
         ctx.beginPath();
         ctx.arc(b.x, b.y, HUT_TRIGGER_RADIUS, 0, Math.PI * 2);
         ctx.stroke();
-      } else if (b.kind === "garrison_tower") {
+      } else if (b.kind === "goblin_drill") {
+        ctx.strokeStyle = `rgba(245, 158, 11, 0.45)`;
+        ctx.lineWidth = 1.1;
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 42, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (b.kind === "prince_tower") {
+        ctx.strokeStyle = `rgba(167, 139, 250, 0.5)`;
+        ctx.lineWidth = 1.35;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, PRINCESS_RANGE, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (b.kind === "garrison_tower" || b.kind === "luxury_hotel") {
         ctx.strokeStyle = `rgba(${col}, 0.42)`;
         ctx.lineWidth = 1;
         ctx.setLineDash([5, 5]);
@@ -6125,6 +8879,21 @@
         ctx.setLineDash([]);
       }
       hpLine(b.x, b.y - b.radius - 4, b);
+      if (b.kind === "prince_tower") {
+        const tag = `Prince · shot ${PRINCESS_RANGE}px / ${PRINCESS_DMG} dmg`;
+        ctx.setLineDash([]);
+        ctx.font = "600 7px ui-monospace,monospace";
+        const twMeas = ctx.measureText(tag).width + 6;
+        const px = b.x - twMeas / 2;
+        const py = b.y + b.radius + 7;
+        ctx.fillStyle = "rgba(76, 29, 149, 0.82)";
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.45)";
+        ctx.lineWidth = 0.85;
+        ctx.fillRect(px, py - 1, twMeas, 11);
+        ctx.strokeRect(px, py - 1, twMeas, 11);
+        ctx.fillStyle = "#f5f3ff";
+        ctx.fillText(tag, b.x, py + 8);
+      }
     }
 
     for (const u of state.troops) {
@@ -6223,10 +8992,16 @@
       if (L.k === "b" && L.b) drawBuilding(ctx, L.b, state);
       else if (L.k === "u" && L.u) drawUnit(ctx, L.u, state);
     }
+    drawGoblinDrillBurrowFx(ctx, state);
     drawArrowSpellFx(ctx, state);
     drawFireballSpellFx(ctx, state);
+    drawGoblinBarrelLandFx(ctx, state);
+    drawRocketSpellFx(ctx, state);
     drawFreezeSpellFx(ctx, state);
     drawZapSpellFx(ctx, state);
+    drawShieldSpellFx(ctx, state);
+    drawBuildRepairSpellFx(ctx, state);
+    drawRageSpellFx(ctx, state);
     drawProjectiles(ctx, state.projectiles);
     drawHeavenlyRageLasers(ctx, state);
     drawWizardSplashFx(ctx, state);
@@ -6282,8 +9057,16 @@
       `<strong>Cannon</strong> (${CANNON_COST}): <strong>${CANNON_HP}</strong> HP decays over <strong>${CANNON_LIFETIME_SEC}s</strong>; shoots ground troops/buildings in range (<strong>${CANNON_RANGE}px</strong>, <strong>${CANNON_SHOT_DMG}</strong> / <strong>${CANNON_FIRE_INTERVAL}s</strong>). ` +
       `<strong>Mega Goblin Army</strong> (${MEGA_GOBLIN_ARMY_COST}): <strong>Chud</strong> + hut head; dashed <strong>${HUT_TRIGGER_RADIUS}px</strong> ring follows him — with a foe inside, one Spear Goblin / <strong>${MEGA_GOBLIN_ARMY_SPEAR_INTERVAL}s</strong> (cap ${MAX_SPEAR_PER_HUT} live). On death, <strong>5</strong> melee goblins. ` +
       `<strong>Mega Army</strong> (${MEGA_ARMY_COST}): <strong>${MEGA_ARMY_GUARD_COUNT}</strong> shielded skeleton guards (${SKELETON_GUARD_SHIELD_HP} shield HP, overflow wasted), <strong>${MEGA_ARMY_SKELETON_COUNT}</strong> skeletons, <strong>1</strong> witch. ` +
+      `<strong>Boberdino Crocodelo</strong> (${BOBERDINO_CROCODELO_COST}): <strong>${BOBERDINO_HP}</strong> HP air unit — only hunts <strong>enemy towers</strong> (no melee damage); bombs every <strong>${BOBERDINO_BOMB_INTERVAL_SEC}s</strong> (<strong>${Math.round(BOBERDINO_BOMB_RADIUS)}</strong> splash, ½× Fireball radius; troop dmg −50% vs spell). ` +
       `<strong>Spear Goblins</strong> (${SPEAR_GOBLINS_COST}): spawns <strong>3</strong> ranged spear goblins. ` +
-      `<strong>Arrows</strong> (${ARROWS_COST}) / <strong>Fireball</strong> (${FIREBALL_COST}) / <strong>Zap</strong> (${ZAP_COST}) / <strong>Freeze</strong> (${FREEZE_COST}): cast <strong>anywhere</strong>; Freeze = <strong>${FREEZE_DURATION_SEC}s</strong> icy zone, <strong>${FREEZE_SPELL_DMG}</strong> damage once, stuns while inside.<br/>`;
+      `<strong>Archers</strong> (${ARCHERS_COST}): <strong>${ARCHERS_PER_CARD}</strong> ranged archers (${ARCHER_HP} HP, ${ATTACK_INTERVAL_ARCHER}s / shot, ${ARCHER_RANGE}px range). ` +
+      `<strong>Archers Army</strong> (${ARCHERS_ARMY_COST}): <strong>${SKARMY_SPAWN_COUNT}</strong> archers in the Skeleton Army layout. ` +
+      `<strong>Bat Army</strong> (${BAT_ARMY_COST}): <strong>${SKARMY_SPAWN_COUNT}</strong> bats in the Skeleton Army layout (${BAT_HP} HP each, flying). ` +
+      `<strong>Mega Knight Army</strong> (${MEGA_KNIGHT_ARMY_COST}): <strong>${SKARMY_SPAWN_COUNT}</strong> Mega Knights in the Skeleton Army layout. ` +
+      `<strong>Arrows</strong> (${ARROWS_COST}) / <strong>Fireball</strong> (${FIREBALL_COST}) / <strong>Goblin Barrel</strong> (${GOBLIN_BARREL_COST}) / <strong>Rocket</strong> (${ROCKET_COST}) / <strong>Zap</strong> (${ZAP_COST}) / <strong>Freeze</strong> (${FREEZE_COST}): cast <strong>anywhere</strong>; Goblin Barrel = flies like Fireball, <strong>no</strong> spell damage, spawns <strong>3</strong> melee goblins on arrival; Freeze = <strong>${FREEZE_DURATION_SEC}s</strong> icy zone, <strong>${FREEZE_SPELL_DMG}</strong> damage once, stuns while inside. ` +
+      `<strong>Shields</strong> (${SHIELDS_SPELL_COST}): allied troops and arena towers in <strong>${Math.round(SHIELDS_SPELL_RADIUS)}px</strong> (½ Arrows splash) gain <strong>${GENERIC_SHIELD_BUFF_HP}</strong> shield HP (breaking hit wastes extra damage). ` +
+      `<strong>Rage</strong> (${RAGE_SPELL_COST}): Zap radius — allied troops <strong>+${Math.round((RAGE_MOVE_ATK_MUL - 1) * 100)}% move &amp; attack</strong> for <strong>${RAGE_BUFF_DURATION_SEC}s</strong>, <strong>${RAGE_SPELL_DMG}</strong> once to foes (troops/towers/buildings). ` +
+      `<strong>Mirror</strong>: cost = <strong>your</strong> previous deploy on <em>your</em> grass + <strong>${MIRROR_EXTRA_ELIXIR}</strong> elixir — replays that card with shields (swarms: ~⅓ shielded).<br/>`;
     const atkLine =
       `<strong>Attack speed</strong> (time between hits · hits/sec): ` +
       `Mini <strong>${ATTACK_INTERVAL_MINI_PEKKA}s</strong> (${aps(ATTACK_INTERVAL_MINI_PEKKA)}/s) · ` +
@@ -6308,10 +9091,33 @@
     );
   }
 
+  function nextDeployedBomberIsEvo(state, side) {
+    if (!state || !state.bomberCycleIdx) return false;
+    if (state.matchMode === "training" && state.testing && state.testing.bomberAlwaysEvo) return true;
+    return state.bomberCycleIdx[side] % 2 === 1;
+  }
+
+  function nextDeployedChudIsEvo(state, side) {
+    if (!state || !state.chudCycleIdx) return false;
+    if (state.matchMode === "training" && state.testing && state.testing.chudAlwaysEvo) return true;
+    return state.chudCycleIdx[side] % 2 === 1;
+  }
+
+  /** Hand / next preview: Evo Bomber (gem) — next bomber from this player is Evo. */
+  function cardShowsBomberEvoGem(state, cardId) {
+    return cardId === "bomber" && nextDeployedBomberIsEvo(state, humanControlSide(state));
+  }
+
+  /** Hand / next preview: Evo Chud (gem) — next Chud from this player is Evo. */
+  function cardShowsChudEvoGem(state, cardId) {
+    return cardId === "chud" && nextDeployedChudIsEvo(state, humanControlSide(state));
+  }
+
   function syncHandDom(state, els) {
     const pct = (state.playerElixir / MAX_ELIXIR) * 100;
     els.fill.style.width = `${pct}%`;
-    els.num.textContent = state.playerElixir.toFixed(1);
+    const elixirShown = state.playerElixir.toFixed(1);
+    els.num.textContent = elixirShown;
     els.fill.parentElement?.setAttribute(
       "aria-valuenow",
       String(Math.round(state.playerElixir * 10) / 10),
@@ -6322,8 +9128,9 @@
       if (!btn) continue;
       const cardId = state.hand[s];
       const ui = cardUiInfo(cardId);
+      const dispCost = effectiveCardCost(state, cardId);
       const inf = playerInfiniteElixir(state);
-      const can = (inf || state.playerElixir >= ui.cost) && !state.over;
+      const can = (inf || (Number.isFinite(dispCost) && state.playerElixir >= dispCost)) && !state.over;
       if (!can && state.selectedSlot === s) state.selectedSlot = null;
       btn.disabled = !can;
       btn.dataset.card = cardId;
@@ -6335,50 +9142,134 @@
         img.alt = ui.name;
       }
       if (nameEl) nameEl.textContent = ui.name;
-      if (costEl) costEl.textContent = String(ui.cost);
+      if (costEl) costEl.textContent = Number.isFinite(dispCost) ? String(dispCost) : "?";
       btn.classList.toggle("is-selected", state.selectedSlot === s);
+      btn.classList.toggle(
+        "card-has-evo",
+        cardShowsBomberEvoGem(state, cardId) || cardShowsChudEvoGem(state, cardId),
+      );
     }
 
     const nextId = state.waiting[0];
+    if (els.deckNextWrap) {
+      if (nextId)
+        els.deckNextWrap.classList.toggle(
+          "card-next-has-evo",
+          cardShowsBomberEvoGem(state, nextId) || cardShowsChudEvoGem(state, nextId),
+        );
+      else els.deckNextWrap.classList.remove("card-next-has-evo");
+    }
     if (nextId && els.deckNextImg && els.deckNextName && els.deckNextCost) {
       const nu = cardUiInfo(nextId);
+      const nextCost = effectiveCardCost(state, nextId);
       els.deckNextImg.src = nu.img;
       els.deckNextImg.alt = nu.name;
       els.deckNextName.textContent = nu.name;
-      els.deckNextCost.textContent = String(nu.cost);
+      els.deckNextCost.textContent = Number.isFinite(nextCost) ? String(nextCost) : "?";
     }
 
     const sel = state.selectedSlot;
     const selCard = sel != null ? state.hand[sel] : null;
-    if (selCard === "arrows") {
-      els.hint.textContent = "Tap anywhere on the arena to drop Arrows (150 area damage).";
-    } else if (selCard === "fireball") {
-      els.hint.textContent = "Tap anywhere on the arena to cast Fireball (small radius, heavy damage).";
-    } else if (selCard === "zap") {
-      els.hint.textContent = "Tap anywhere on the arena to cast Zap (small area damage).";
-    } else if (selCard === "freeze") {
-      els.hint.textContent = `Freeze (${FREEZE_COST} elixir): tap anywhere — ${FREEZE_DURATION_SEC}s zone, ${FREEZE_SPELL_DMG} damage once, enemies inside are stunned for the full duration.`;
-    } else if (selCard === "tombstone") {
-      els.hint.textContent = `Tombstone (${TOMBSTONE_COST}): building — ${TOMBSTONE_HP} HP decays over ${TOMBSTONE_LIFETIME_SEC}s; spawns ${TOMBSTONE_SKELS_EACH_SPAWN} skeletons every ${TOMBSTONE_SKEL_INTERVAL_SEC}s; on death spawns ${TOMBSTONE_SKELS_ON_DEATH}.`;
-    } else if (selCard === "electro_wizard") {
-      els.hint.textContent = `Electro Wizard (${ELECTRO_WIZARD_COST}, ${ELECTRO_WIZARD_HP} HP): spawn zap; attacks every ${ELECTRO_WIZARD_ATTACK_SEC}s with instant lightning (two targets or 2× on one); each hit stuns ${ELECTRO_STUN_SEC}s.`;
-    } else if (selCard === "goblin_hut") {
-      els.hint.textContent =
-        `Place on your grass. HP slowly drains (~${GOBLIN_HUT_LIFETIME_SEC}s lifetime). Ring = spawn range: one Spear Goblin / 2s while an enemy is inside.`;
-    } else if (selCard === "cannon") {
-      els.hint.textContent = `Cannon (${CANNON_COST}): ${CANNON_HP} HP drains over ${CANNON_LIFETIME_SEC}s. Fires at the nearest enemy troop or building in range (${CANNON_RANGE}px, ${CANNON_SHOT_DMG} dmg / ${CANNON_FIRE_INTERVAL}s).`;
-    } else if (selCard === "garrison_tower") {
-      els.hint.textContent = `Garrison Tower (${GARRISON_TOWER_COST}): ${GARRISON_TOWER_HP} HP drains over ${GARRISON_TOWER_LIFETIME_SEC}s. Deploy a troop on it — they stay inside, shoot out, and are untargetable until the tower is destroyed.`;
-    } else if (selCard === "mega_goblin_army") {
-      els.hint.textContent =
-        `Chud that spawns Spear Goblins like a hut: ring moves with him; enemy inside = one spear / ${MEGA_GOBLIN_ARMY_SPEAR_INTERVAL}s (max ${MAX_SPEAR_PER_HUT} alive). Death: 5 melee goblins.`;
-    } else if (selCard === "mega_army") {
-      els.hint.textContent = `Swarm: ${MEGA_ARMY_GUARD_COUNT} guards (${SKELETON_GUARD_SHIELD_HP} shield HP each, overflow wasted when shield breaks — then they fight as skeletons), ${MEGA_ARMY_SKELETON_COUNT} skeletons, 1 witch (${MEGA_ARMY_COST} elixir).`;
-    } else if (selCard) {
-      els.hint.textContent =
-        "Green tint shows where you can deploy. Destroy an enemy princess tower to place further up that lane (like Clash).";
-    } else {
-      els.hint.textContent = "Pick one of your 4 cards — next in line is shown under “Next”.";
+    const hintEl = els.hint;
+    if (hintEl) {
+      if (selCard === "arrows") {
+        hintEl.textContent = "Tap anywhere on the arena to drop Arrows (150 area damage).";
+      } else if (selCard === "fireball") {
+        hintEl.textContent = "Tap anywhere on the arena to cast Fireball (small radius, heavy damage).";
+      } else if (selCard === "goblin_barrel") {
+        hintEl.textContent = `Goblin Barrel (${GOBLIN_BARREL_COST} elixir): flies from your king like Fireball — no spell damage; spawns 3 melee goblins where it lands (triangle layout like Goblins). Tap anywhere.`;
+      } else if (selCard === "rocket") {
+        hintEl.textContent = `Rocket (${ROCKET_COST} elixir): tiny blast (${Math.round(
+          ROCKET_SPELL_RADIUS,
+        )} radius, ¹⁄₃ of Fireball) — ${Math.round(ROCKET_SPELL_DMG)} damage to troops & buildings, ${Math.round(
+          ROCKET_TOWER_DMG,
+        )} to towers. Travels from your king tower. Tap anywhere on the arena.`;
+      } else if (selCard === "zap") {
+        hintEl.textContent = "Tap anywhere on the arena to cast Zap (small area damage).";
+      } else if (selCard === "freeze") {
+        hintEl.textContent = `Freeze (${FREEZE_COST} elixir): tap anywhere — ${FREEZE_DURATION_SEC}s zone, ${FREEZE_SPELL_DMG} damage once, enemies inside are stunned for the full duration.`;
+      } else if (selCard === "shields") {
+        hintEl.textContent = `Shields (${SHIELDS_SPELL_COST} elixir): buff allied troops and arena towers in ${Math.round(
+          SHIELDS_SPELL_RADIUS,
+        )} px (½ of Arrows splash) — +${GENERIC_SHIELD_BUFF_HP} shield HP (absorbs first; breaking hit wastes extra damage). Tap anywhere.`;
+      } else if (selCard === "rage") {
+        hintEl.textContent = `Rage (${RAGE_SPELL_COST} elixir): Zap-sized ring — allied troops gain +${Math.round(
+          (RAGE_MOVE_ATK_MUL - 1) * 100,
+        )}% move & attack speed for ${RAGE_BUFF_DURATION_SEC}s; ${RAGE_SPELL_DMG} damage once to enemies (troops/towers/buildings). Tap anywhere.`;
+      } else if (selCard === "mirror") {
+        const hm = humanControlSide(state);
+        const last = hm === "player" ? state.lastPlayedBySide.player : state.lastPlayedBySide.enemy;
+        const ec = effectiveCardCost(state, "mirror", hm);
+        hintEl.textContent =
+          last && last !== "mirror" && Number.isFinite(ec)
+            ? `Mirror (${ec} elixir): replays your last card (${String(last).replace(/_/g, " ")}) with shields (swarms: ~⅓). Tap to deploy.`
+            : "Play something else on your side first — Mirror shows “?” until you have a prior deploy.";
+      } else if (selCard === "tombstone") {
+        hintEl.textContent = `Tombstone (${TOMBSTONE_COST}): building — ${TOMBSTONE_HP} HP decays over ${TOMBSTONE_LIFETIME_SEC}s; spawns ${TOMBSTONE_SKELS_EACH_SPAWN} skeletons every ${TOMBSTONE_SKEL_INTERVAL_SEC}s; on death spawns ${TOMBSTONE_SKELS_ON_DEATH}.`;
+      } else if (selCard === "electro_wizard") {
+        hintEl.textContent = `Electro Wizard (${ELECTRO_WIZARD_COST}, ${ELECTRO_WIZARD_HP} HP): spawn zap; attacks every ${ELECTRO_WIZARD_ATTACK_SEC}s with instant lightning (two targets or 2× on one); each hit stuns ${ELECTRO_STUN_SEC}s.`;
+      } else if (selCard === "goblin_hut") {
+        hintEl.textContent =
+          `Place on your grass. HP slowly drains (~${GOBLIN_HUT_LIFETIME_SEC}s lifetime). Ring = spawn range: one Spear Goblin / 2s while an enemy is inside.`;
+      } else if (selCard === "goblin_drill") {
+        hintEl.textContent = `Goblin Drill (${GOBLIN_DRILL_COST} elixir): tap on opponent grass — tunnels ~${GOBLIN_DRILL_TRAVEL_SEC}s from your king (path shown); drill loses HP twice as fast as a hut baseline; when destroyed, spills 2 melee Goblins. Active drill spawns a Goblin every ${GOBLIN_DRILL_SPAWN_INTERVAL}s (max ${MAX_DRILL_GOBLINS} alive).`;
+      } else if (selCard === "goblin_drill_army") {
+        hintEl.textContent = `Goblin Drill Army (${GOBLIN_DRILL_ARMY_COST} elixir): tap center on opponent grass — six burrows from your king land in a ring around that point (${GOBLIN_DRILL_TRAVEL_SEC}s travel each); each drill behaves like Goblin Drill.`;
+      } else if (selCard === "build") {
+        hintEl.textContent = `Build (${BUILD_SPELL_COST} elixir): tap anywhere — restores +${BUILD_SPELL_HEAL} HP to each of your damaged spawned buildings (huts, drills, cannon, …) inside a ${Math.round(
+          ARROWS_SPELL_RADIUS,
+        )} px splash (same as Arrows vs buildings). Arena towers are not repaired.`;
+      } else if (selCard === "cannon") {
+        hintEl.textContent = `Cannon (${CANNON_COST}): ${CANNON_HP} HP drains over ${CANNON_LIFETIME_SEC}s. Fires at the nearest enemy troop or building in range (${CANNON_RANGE}px, ${CANNON_SHOT_DMG} dmg / ${CANNON_FIRE_INTERVAL}s).`;
+      } else if (selCard === "garrison_tower") {
+        hintEl.textContent = `Garrison Tower (${GARRISON_TOWER_COST}): ${GARRISON_TOWER_HP} HP drains in ~${Math.round(
+          GARRISON_TOWER_LIFETIME_SEC / GARRISON_TOWER_DECAY_SPEED_MUL,
+        )}s (30% faster drain than the ${GARRISON_TOWER_LIFETIME_SEC}s baseline). Deploy a troop on it — they stay inside, shoot out, and are untargetable until the tower is destroyed.`;
+      } else if (selCard === "luxury_hotel") {
+        hintEl.textContent = `Luxury Hotel (${LUXURY_HOTEL_COST}): ${LUXURY_HOTEL_HP} HP, no decay — holds up to 2 troops. Same garrison rules: troops inside shoot out and are untargetable until this building falls.`;
+      } else if (selCard === "prince_tower") {
+        hintEl.textContent = `Prince Tower (${PRINCE_TOWER_COST}): ${PRINCE_PLACEABLE_HP} HP (½ princess), no HP decay — shoots like a princess tower (${PRINCESS_RANGE}px, ${PRINCESS_DMG} dmg).`;
+      } else if (selCard === "mega_goblin_army") {
+        hintEl.textContent =
+          `Chud that spawns Spear Goblins like a hut: ring moves with him; enemy inside = one spear / ${MEGA_GOBLIN_ARMY_SPEAR_INTERVAL}s (max ${MAX_SPEAR_PER_HUT} alive). Death: 5 melee goblins.`;
+      } else if (selCard === "mega_army") {
+        hintEl.textContent = `Swarm: ${MEGA_ARMY_GUARD_COUNT} guards (${SKELETON_GUARD_SHIELD_HP} shield HP each, overflow wasted when shield breaks — then they fight as skeletons), ${MEGA_ARMY_SKELETON_COUNT} skeletons, 1 witch (${MEGA_ARMY_COST} elixir).`;
+      } else if (selCard === "archers") {
+        hintEl.textContent = `Archers (${ARCHERS_COST} elixir): spawns ${ARCHERS_PER_CARD} archers — ${ARCHER_HP} HP each, ${ATTACK_INTERVAL_ARCHER}s shots, ${ARCHER_RANGE}px range.`;
+      } else if (selCard === "archers_army") {
+        hintEl.textContent = `Archers Army (${ARCHERS_ARMY_COST} elixir): same swarm pattern as Skarmy (${SKARMY_SPAWN_COUNT}), but every unit is an archer (${ARCHER_HP} HP, ${ARCHER_RANGE}px range).`;
+      } else if (selCard === "bat_army") {
+        hintEl.textContent = `Bat Army (${BAT_ARMY_COST} elixir): same swarm pattern as Skarmy (${SKARMY_SPAWN_COUNT}), but every unit is a bat (${BAT_HP} HP, flying; ${BAT_DMG} dmg — same as Bats card).`;
+      } else if (selCard === "mega_knight_army") {
+        hintEl.textContent = `Mega Knight Army (${MEGA_KNIGHT_ARMY_COST} elixir): ${SKARMY_SPAWN_COUNT} Mega Knights in the Skeleton Army spiral (${MEGA_KNIGHT_HP} HP each, jump slam).`;
+      } else if (selCard === "boberdino_crocodelo") {
+        hintEl.textContent = `Boberdino Crocodelo (${BOBERDINO_CROCODELO_COST} elixir): ${BOBERDINO_HP} HP — flies to the nearest enemy tower only; 0 melee damage; keeps dropping small Fireballs (${Math.round(
+          BOBERDINO_BOMB_RADIUS,
+        )}px radius, half Fireball troop damage, half vs towers).`;
+      } else if (selCard === "nothing") {
+        hintEl.textContent = "Nothing (0 elixir): places nothing — tap anywhere to cycle your hand.";
+      } else if (selCard === "nothing_army") {
+        hintEl.textContent = `Nothing Army (0 elixir): ${NOTHING_ARMY_COUNT} nothings — still nothing on the arena. Tap anywhere.`;
+      } else if (selCard === "bats") {
+        hintEl.textContent = `Bats (${BATS_COST}): ${BAT_COUNT}× flying swarm — ${BAT_HP} HP, ${BAT_DMG} dmg (¾ skeleton); ground melee can’t hit them.`;
+      } else if (selCard === "assassin") {
+        hintEl.textContent = `Assassin (${ASSASSIN_COST} elixir): ${KNIGHT_HP} HP + ${GENERIC_SHIELD_BUFF_HP} spawn shield, ${MINI_DMG} dmg / ${ATTACK_INTERVAL_MINI_PEKKA}s — ground troops only; melee splashes ~${Math.round(ASSASSIN_SPLASH_FRACTION * 100)}% damage in ${ASSASSIN_SPLASH_RADIUS}px. After ${ASSASSIN_CHARGE_PREP_SEC}s moving toward a foe: purple aura, ${ASSASSIN_CHARGE_SPEED_MUL}× speed & faster stride, next melee hits for double damage. Towers ignore him; Goblin Hut ring ignores him.`;
+      } else if (selCard === "chud") {
+        const evoHint = nextDeployedChudIsEvo(state, humanControlSide(state))
+          ? ` Evo: purple shockwave every ${CHUD_EVO_PULSE_SEC}s (${CHUD_EVO_PULSE_DMG} dmg + knockback in ${CHUD_EVO_PULSE_RADIUS}px).`
+          : ` Evo every other Chud — gem when Evo is queued.`;
+        hintEl.textContent = `Chud (${CHUD_COST} elixir): ${CHUD_HP} HP tower hunter — ${CHUD_DMG} dmg / ${ATTACK_INTERVAL_CHUD}s; shoves smaller foes aside.${evoHint}`;
+      } else if (selCard === "bomber") {
+        const evoHint = nextDeployedBomberIsEvo(state, humanControlSide(state))
+          ? ` Evo: purple bomb & splashes, ${ATTACK_INTERVAL_BOMBER_EVO.toFixed(2)}s throws; bomb travels 30% slower with ${BOMBER_CHAIN_FOLLOW_UP_COUNT + 1} splashes (${BOMBER_CHAIN_STEP_SEC}s apart).`
+          : ` Evo every other Bomber — gem when Evo is queued.`;
+        hintEl.textContent = `Bomber (${BOMBER_COST} elixir): explosions land slightly past enemies for fuller splashes.${evoHint}`;
+      } else if (selCard) {
+        hintEl.textContent =
+          "Green tint shows where you can deploy. Destroy an enemy princess tower to place further up that lane (like Clash).";
+      } else {
+        hintEl.textContent = "Pick one of your 4 cards — next in line is shown under “Next”.";
+      }
     }
   }
 
@@ -6395,6 +9286,8 @@
   let gameRunning = false;
   let rafId = 0;
   let lastFrameT = 0;
+  /** Keeps hudHtml() from touching the DOM when text unchanged — cheaper and avoids noisy aria-live churn. */
+  let lastHudHtmlStr = "";
   /** @type {CanvasRenderingContext2D | null} */
   let gameCtx = null;
   /** @type {HTMLElement | null} */
@@ -6408,6 +9301,7 @@
     deckNextImg: /** @type {HTMLImageElement | null} */ (null),
     deckNextName: /** @type {HTMLElement | null} */ (null),
     deckNextCost: /** @type {HTMLElement | null} */ (null),
+    deckNextWrap: /** @type {HTMLElement | null} */ (null),
   };
   /** @type {HTMLCanvasElement | null} */
   let gameCanvas = null;
@@ -6424,6 +9318,7 @@
     const deckNextImg = document.getElementById("deck-next-img");
     const deckNextName = document.getElementById("deck-next-name");
     const deckNextCost = document.getElementById("deck-next-cost");
+    const deckNextWrap = document.getElementById("deck-next-wrap");
     const slots = [0, 1, 2, 3].map((i) => document.getElementById(`card-slot-${i}`));
 
     if (
@@ -6455,12 +9350,13 @@
     gameEls.deckNextImg = deckNextImg;
     gameEls.deckNextName = deckNextName;
     gameEls.deckNextCost = deckNextCost;
+    gameEls.deckNextWrap = deckNextWrap;
 
     function selectSlot(slot) {
       const state = stateRef.current;
       if (!state || state.over) return;
       const cardId = state.hand[slot];
-      if (!playerInfiniteElixir(state) && state.playerElixir < cardCost(cardId)) return;
+      if (!playerInfiniteElixir(state) && state.playerElixir < effectiveCardCost(state, cardId, humanControlSide(state))) return;
       state.selectedSlot = state.selectedSlot === slot ? null : slot;
     }
 
@@ -6478,8 +9374,12 @@
     const testingPanel = document.getElementById("testing-panel");
     const testingEnemySpawns = document.getElementById("testing-enemy-spawns");
     const testingInfiniteElixir = document.getElementById("testing-infinite-elixir");
+    const testingInfiniteTowerHp = document.getElementById("testing-infinite-tower-hp");
     const testingPlayAsEnemy = document.getElementById("testing-play-as-enemy");
     const testingCombatDebug = document.getElementById("testing-combat-debug");
+    const testingInvincibleTroops = document.getElementById("testing-invincible-troops");
+    const testingBomberAlwaysEvo = document.getElementById("testing-bomber-always-evo");
+    const testingChudAlwaysEvo = document.getElementById("testing-chud-always-evo");
     const testingKillAll = document.getElementById("testing-kill-all");
 
     function syncTestingUi() {
@@ -6492,8 +9392,12 @@
       testingPanel.hidden = false;
       testingEnemySpawns.checked = st.testing.enemySpawns !== false;
       testingInfiniteElixir.checked = !!st.testing.infiniteElixir;
+      if (testingInfiniteTowerHp) testingInfiniteTowerHp.checked = !!st.testing.infiniteTowerHp;
       if (testingPlayAsEnemy) testingPlayAsEnemy.checked = !!st.testing.playAsEnemy;
       if (testingCombatDebug) testingCombatDebug.checked = !!st.testing.combatDebug;
+      if (testingInvincibleTroops) testingInvincibleTroops.checked = !!st.testing.invincibleTroops;
+      if (testingBomberAlwaysEvo) testingBomberAlwaysEvo.checked = !!st.testing.bomberAlwaysEvo;
+      if (testingChudAlwaysEvo) testingChudAlwaysEvo.checked = !!st.testing.chudAlwaysEvo;
     }
 
     if (testingPanel && testingEnemySpawns && testingInfiniteElixir && testingKillAll) {
@@ -6505,6 +9409,12 @@
         const st = stateRef.current;
         if (st && st.testing) st.testing.infiniteElixir = testingInfiniteElixir.checked;
       });
+      if (testingInfiniteTowerHp) {
+        testingInfiniteTowerHp.addEventListener("change", () => {
+          const st = stateRef.current;
+          if (st && st.testing) st.testing.infiniteTowerHp = testingInfiniteTowerHp.checked;
+        });
+      }
       if (testingPlayAsEnemy) {
         testingPlayAsEnemy.addEventListener("change", () => {
           const st = stateRef.current;
@@ -6517,13 +9427,38 @@
           if (st && st.testing) st.testing.combatDebug = testingCombatDebug.checked;
         });
       }
+      if (testingInvincibleTroops) {
+        testingInvincibleTroops.addEventListener("change", () => {
+          const st = stateRef.current;
+          if (st && st.testing) st.testing.invincibleTroops = testingInvincibleTroops.checked;
+        });
+      }
+      if (testingBomberAlwaysEvo) {
+        testingBomberAlwaysEvo.addEventListener("change", () => {
+          const st = stateRef.current;
+          if (st && st.testing) st.testing.bomberAlwaysEvo = testingBomberAlwaysEvo.checked;
+        });
+      }
+      if (testingChudAlwaysEvo) {
+        testingChudAlwaysEvo.addEventListener("change", () => {
+          const st = stateRef.current;
+          if (st && st.testing) st.testing.chudAlwaysEvo = testingChudAlwaysEvo.checked;
+        });
+      }
       testingKillAll.addEventListener("click", () => {
         const st = stateRef.current;
         if (!st || st.matchMode !== "training" || st.over) return;
         for (const u of st.troops) u.hp = 0;
         st.projectiles.length = 0;
         st.pendingDeploys.length = 0;
+        st.arrowFx = null;
         st.fireballFx = null;
+        st.goblinBarrelFx = null;
+        st.rocketFx = null;
+        st.zapFx = null;
+        st.shieldBuffFx = null;
+        st.buildRepairFx = null;
+        st.rageFx = null;
         st.freezeZones = [];
         st.wizardSplashFx.length = 0;
       });
@@ -6537,8 +9472,12 @@
         if (prevMode === "training" && stateRef.current.testing) {
           stateRef.current.testing.enemySpawns = testingEnemySpawns.checked;
           stateRef.current.testing.infiniteElixir = testingInfiniteElixir.checked;
+          if (testingInfiniteTowerHp) stateRef.current.testing.infiniteTowerHp = testingInfiniteTowerHp.checked;
           if (testingPlayAsEnemy) stateRef.current.testing.playAsEnemy = testingPlayAsEnemy.checked;
           if (testingCombatDebug) stateRef.current.testing.combatDebug = testingCombatDebug.checked;
+          if (testingInvincibleTroops) stateRef.current.testing.invincibleTroops = testingInvincibleTroops.checked;
+          if (testingBomberAlwaysEvo) stateRef.current.testing.bomberAlwaysEvo = testingBomberAlwaysEvo.checked;
+          if (testingChudAlwaysEvo) stateRef.current.testing.chudAlwaysEvo = testingChudAlwaysEvo.checked;
         }
         syncTestingUi();
       }
@@ -6561,14 +9500,27 @@
 
   function frame(now) {
     if (!gameRunning || !gameCtx || !gameHud || !stateRef.current) return;
-    const dt = Math.min(0.05, (now - lastFrameT) / 1000);
+    let dt = (now - lastFrameT) / 1000;
+    if (!(dt >= 0) || !(dt < 2)) dt = 0.016;
+    dt = Math.min(0.05, dt);
     lastFrameT = now;
     const state = stateRef.current;
-    stepSimulation(dt, state);
-    render(gameCtx, state);
-    gameHud.innerHTML = hudHtml(state);
-    syncHandDom(state, gameEls);
-    rafId = requestAnimationFrame(frame);
+    try {
+      stepSimulation(dt, state);
+      render(gameCtx, state);
+      const hudStr = hudHtml(state);
+      if (hudStr !== lastHudHtmlStr) {
+        lastHudHtmlStr = hudStr;
+        gameHud.innerHTML = hudStr;
+      }
+      syncHandDom(state, gameEls);
+    } catch (err) {
+      console.error("[NightArena] frame()", err);
+    } finally {
+      if (gameRunning && gameCtx && gameHud && stateRef.current) {
+        rafId = requestAnimationFrame(frame);
+      }
+    }
   }
 
   /**
@@ -6602,11 +9554,15 @@
     st.matchMode = mode;
     st.testing.enemySpawns = true;
     st.testing.infiniteElixir = false;
+    st.testing.infiniteTowerHp = false;
     st.testing.playAsEnemy = false;
     st.testing.combatDebug = false;
+    st.testing.invincibleTroops = false;
+    st.testing.bomberAlwaysEvo = false;
     stateRef.current = st;
     gameRunning = true;
     lastFrameT = performance.now();
+    lastHudHtmlStr = "";
     const emoteBar = document.getElementById("emote-bar");
     if (emoteBar) {
       emoteBar.style.display = "flex";
@@ -6621,6 +9577,7 @@
     rafId = 0;
     stateRef.current = null;
     hudModeLine = "";
+    lastHudHtmlStr = "";
     tearDownBattleNet();
     testingPanelSync.fn?.();
     const emoteBar = document.getElementById("emote-bar");
@@ -6637,13 +9594,22 @@
     start,
     stop,
     mount: mountGameDom,
-    CARD_POOL: ALL_CARD_IDS.slice(),
+    CARD_POOL: ALL_CARD_IDS.slice().sort((a, b) => {
+      const ca = getCardCostNumber(a);
+      const cb = getCardCostNumber(b);
+      if (ca !== cb) return ca - cb;
+      return String(a).localeCompare(String(b));
+    }),
     validateDeck: validateDeckForGame,
     getDefaultDeck: () => DEFAULT_DECK_EIGHT.slice(),
-    getCardPreview: (cardId) => cardUiInfo(String(cardId)),
+    getCardPreview: (cardId) => ({
+      ...cardUiInfo(String(cardId)),
+      description: collectionCardDescription(String(cardId)),
+    }),
+    getCardCostNumber: (cardId) => getCardCostNumber(String(cardId)),
   };
 
-  const NIGHT_ARENA_VERSION = 117;
+  const NIGHT_ARENA_VERSION = 174;
   window.NIGHT_ARENA_VERSION = NIGHT_ARENA_VERSION;
   function paintVersionBadge() {
     document.querySelectorAll("[data-na-version]").forEach((el) => {

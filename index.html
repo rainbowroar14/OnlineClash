@@ -46,11 +46,18 @@
           <div class="deck-builder" id="deck-builder">
             <h2>Your deck (8 cards)</h2>
             <p class="deck-builder-hint">
-              Tap cards below to fill slots left to right. Tap a slot to remove. Needs all 8 filled — saved in your browser for Training &amp; Battle.
+              Tap cards below to fill slots left to right. Tap a filled slot to remove. Needs all 8 filled — saved in your
+              browser for Training &amp; Battle. Use <strong>One card per row + description</strong> to scan the collection with blurbs; uncheck for the compact grid.
             </p>
             <div class="deck-slots-row" id="deck-slots-row" aria-label="Deck slots"></div>
-            <div class="deck-pool-label">Collection</div>
-            <div class="deck-pool-grid" id="deck-pool-grid"></div>
+            <div class="deck-pool-toolbar">
+              <span class="deck-pool-label">Collection</span>
+              <label class="deck-collection-setting">
+                <input type="checkbox" id="deck-collection-rows" checked />
+                <span>One card per row + description</span>
+              </label>
+            </div>
+            <div class="deck-pool-grid" id="deck-pool-grid" aria-label="Card collection"></div>
             <button type="button" class="btn" id="btn-deck-default">Reset to default deck</button>
           </div>
           <div class="menu-actions">
@@ -94,10 +101,22 @@
             ><input type="checkbox" id="testing-infinite-elixir" /> Infinite elixir (you)</label
           >
           <label class="testing-label"
+            ><input type="checkbox" id="testing-infinite-tower-hp" /> Infinite tower HP (arena towers invincible)</label
+          >
+          <label class="testing-label"
             ><input type="checkbox" id="testing-play-as-enemy" /> Play as top team (spawn on enemy side)</label
           >
           <label class="testing-label"
             ><input type="checkbox" id="testing-combat-debug" /> Combat debug (ranges, projectile hit radius, HP)</label
+          >
+          <label class="testing-label"
+            ><input type="checkbox" id="testing-invincible-troops" /> Invincible your troops</label
+          >
+          <label class="testing-label"
+            ><input type="checkbox" id="testing-bomber-always-evo" /> Always Evo Bomber (training)</label
+          >
+          <label class="testing-label"
+            ><input type="checkbox" id="testing-chud-always-evo" /> Always Evo Chud (training)</label
           >
           <button type="button" class="btn btn-small" id="testing-kill-all">Kill all units</button>
         </div>
@@ -128,7 +147,7 @@
         <div class="hand" id="hand">
           <div class="elixir-block">
             <div class="elixir-label">Elixir</div>
-            <div class="elixir-bar" role="progressbar" aria-valuemin="0" aria-valuemax="30">
+            <div class="elixir-bar" role="progressbar" aria-valuemin="0" aria-valuemax="50">
               <div class="elixir-fill" id="elixir-fill"></div>
             </div>
             <div class="elixir-num" id="elixir-num">0.0</div>
@@ -165,7 +184,7 @@
           </div>
         </div>
 
-        <div class="hud" id="hud" aria-live="polite"></div>
+        <div class="hud" id="hud" aria-live="off"></div>
         <footer class="footer">
           <button type="button" class="btn" id="btn-reset">Reset match</button>
         </footer>
@@ -173,8 +192,8 @@
     </div>
 
     <!-- ?v= bumps cache after deploy; open /js/menu.js in browser and search FIREBASE_WEB_CONFIG to verify live file -->
-    <script src="js/game.js?v=117" defer></script>
+    <script src="js/game.js?v=174" defer></script>
     <script src="js/matchmaking.js?v=56" defer></script>
-    <script src="js/menu.js?v=53" defer></script>
+    <script src="js/menu.js?v=63" defer></script>
   </body>
 </html>
