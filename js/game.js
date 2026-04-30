@@ -35,13 +35,14 @@
   const ASSASSIN_SPLASH_RADIUS = 24;
   const ASSASSIN_SPLASH_FRACTION = 0.5;
   /** Meme melee: fast, huge sprite, very high hit-rate DPS. */
-  const TUNG_SAHUR_COST = 10;
+  const TUNG_SAHUR_COST = 7;
   const TUNG_SAHUR_HP = 200;
   const TUNG_SAHUR_DMG = 5;
   const SPEED_TUNG_SAHUR = 75;
   const ATTACK_INTERVAL_TUNG_SAHUR = 1 / 50;
   const TUNG_SAHUR_DEATH_BLAST_RADIUS = 122;
   const TUNG_SAHUR_DEATH_BLAST_DMG = 750;
+  const TUNG_EVO_REQUIRED_CYCLES = 2;
   /** Heavenly Tung: death → pause → rally → charge → red lasers (3s) → nuke + 12 Tung Sahur, 3 Mega Goblin Army, 1 Heavenly Tung (or early if no targets). */
   const HEAVENLY_TUNG_COST = 50;
   const HEAVENLY_TUNG_PAUSE_SEC = 1;
@@ -89,6 +90,8 @@
   const ARROWS_COST = 3;
   const ARROWS_SPELL_DMG = 150;
   const ARROWS_SPELL_RADIUS = 92;
+  const CLONE_COST = 5;
+  const CLONE_SPELL_RADIUS = ARROWS_SPELL_RADIUS * 0.7;
   const FIREBALL_COST = 4;
   const FIREBALL_SPELL_DMG = ARROWS_SPELL_DMG * 2.5;
   const FIREBALL_TOWER_DMG = FIREBALL_SPELL_DMG * 0.5;
@@ -175,6 +178,11 @@
   const CANNON_RANGE = 105;
   const CANNON_SHOT_DMG = 52;
   const CANNON_FIRE_INTERVAL = 0.88;
+  const STATUE_COST = 4;
+  const STATUE_HP = 750;
+  const STATUE_DEATH_BLAST_RADIUS = FIREBALL_SPELL_RADIUS * 0.7;
+  const STATUE_DEATH_BLAST_DMG = FIREBALL_SPELL_DMG * 0.6;
+  const STATUE_DEATH_BLAST_TOWER_DMG = FIREBALL_TOWER_DMG * 0.6;
 
   /** Garrison tower: 150 HP decays over 60s; one friendly troop deployed on it hides inside until the tower dies. */
   const GARRISON_TOWER_COST = 4;
@@ -222,11 +230,13 @@
     "bat_army",
     "mega_army",
     "arrows",
+    "clone",
     "fireball",
     "goblin_barrel",
     "rocket",
     "freeze",
     "goblin_hut",
+    "statue",
     "cannon",
     "garrison_tower",
     "luxury_hotel",
@@ -346,10 +356,10 @@
   const ATTACK_INTERVAL_CHUD = 1.55;
   const CHUD_MELEE_RANGE = 28;
   const CHUD_RADIUS = 14;
-  /** Evo Chud (every other deploy per side): shockwave every this many seconds. */
+  /** Evo Chud pulse cadence. */
   const CHUD_EVO_PULSE_SEC = 2;
   const CHUD_EVO_PULSE_DMG = 100;
-  const CHUD_EVO_PULSE_RADIUS = 80;
+  const CHUD_EVO_PULSE_RADIUS = 64;
   const CHUD_EVO_KNOCK_DIST = 24;
   /** Chud-style troop (towers only) with hut head; 5 melee goblins on death. */
   const MEGA_GOBLIN_ARMY_COST = 15;
@@ -1320,6 +1330,10 @@
         b.drillDeathSpawned = true;
         spawnGoblinsOnDrillDeath(state, b, 2);
       }
+      if (b.kind === "statue" && !b.statueDeathBlasted) {
+        b.statueDeathBlasted = true;
+        triggerStatueDeathBlast(state, b);
+      }
     }
   }
 
@@ -1348,20 +1362,99 @@
 
   function triggerTungSahurDeathBlast(state, troop) {
     if (!state || !troop || troop.type !== "tung_tung_tung_sahur") return;
+    const blastR =
+      typeof troop.tungDeathBlastRadius === "number" ? troop.tungDeathBlastRadius : TUNG_SAHUR_DEATH_BLAST_RADIUS;
+    const blastDmg =
+      typeof troop.tungDeathBlastDamage === "number" ? troop.tungDeathBlastDamage : TUNG_SAHUR_DEATH_BLAST_DMG;
     applyFullAoEToFoes(
       state,
       troop.x,
       troop.y,
       troop.side,
-      TUNG_SAHUR_DEATH_BLAST_RADIUS,
-      TUNG_SAHUR_DEATH_BLAST_DMG,
+      blastR,
+      blastDmg,
     );
     state.wizardSplashFx.push({
       cx: troop.x,
       cy: troop.y,
       until: state.time + 1.4,
-      radius: TUNG_SAHUR_DEATH_BLAST_RADIUS,
+      radius: blastR,
       kind: "tung_boom",
+    });
+
+    if (!troop.tungEvo || troop.tungMiniSpawned) return;
+    troop.tungMiniSpawned = true;
+    const princessTowers = state.towers.filter((tw) => tw.kind === "princess");
+    const miniHp = Math.max(1, Math.round(TUNG_SAHUR_HP * 0.5));
+    const miniDmg = Math.max(1, Math.round(TUNG_SAHUR_DMG * 0.5));
+    const miniBlastR = Math.max(8, TUNG_SAHUR_DEATH_BLAST_RADIUS * 0.5);
+    const miniBlastDmg = Math.max(1, Math.round(TUNG_SAHUR_DEATH_BLAST_DMG * 0.5));
+    for (const tw of princessTowers) {
+      for (let i = 0; i < 2; i++) {
+        const ox = i === 0 ? -10 : 10;
+        const oy = tw.side === "enemy" ? 18 : -18;
+        const sx = clamp(tw.x + ox, 14, W - 14);
+        const sy = clamp(tw.y + oy, 14, H - 14);
+        state.troops.push({
+          id: `u${++state.uid}`,
+          side: troop.side,
+          type: "tung_tung_tung_sahur",
+          x: sx,
+          y: sy,
+          hp: miniHp,
+          maxHp: miniHp,
+          speed: SPEED_TUNG_SAHUR,
+          radius: 12,
+          path: "deploy",
+          bridgeIx: pickBridgeIx(sx, sy),
+          spawnTime: state.time,
+          hasHitOnce: false,
+          firstHitDelay: MELEE_FIRST_HIT_DELAY,
+          lastMeleeAt: -999,
+          hitInterval: ATTACK_INTERVAL_TUNG_SAHUR,
+          hitDamage: miniDmg,
+          meleeRange: 30,
+          attackT: 0,
+          faceX: 0,
+          faceY: troop.side === "player" ? -1 : 1,
+          stunUntil: 0,
+          combatLocked: false,
+          tungMini: true,
+          tungDeathBlastRadius: miniBlastR,
+          tungDeathBlastDamage: miniBlastDmg,
+          tungEvo: false,
+          tungMiniSpawned: true,
+        });
+      }
+    }
+  }
+
+  function triggerStatueDeathBlast(state, b) {
+    const cx = b.x;
+    const cy = b.y;
+    const fromSide = b.side;
+    const R = STATUE_DEATH_BLAST_RADIUS;
+    for (const u of state.troops) {
+      if (u.hp <= 0 || u.side === fromSide) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      if (dist(u.x, u.y, cx, cy) <= R) applyTroopDamage(u, STATUE_DEATH_BLAST_DMG);
+    }
+    for (const bd of state.buildings || []) {
+      if (bd.hp <= 0 || bd.side === fromSide || bd.id === b.id) continue;
+      if (dist(bd.x, bd.y, cx, cy) <= R + bd.radius) applyBuildingDamage(state, bd, STATUE_DEATH_BLAST_DMG);
+    }
+    for (const tw of state.towers) {
+      if (tw.hp <= 0 || tw.side === fromSide) continue;
+      if (tw.kind === "king" && !kingAwakeForSide(state.towers, tw.side)) continue;
+      const ext = tw.kind === "king" ? 34 : 26;
+      if (dist(tw.x, tw.y, cx, cy) <= R + ext) applyTowerDamage(state, tw, STATUE_DEATH_BLAST_TOWER_DMG);
+    }
+    state.wizardSplashFx.push({
+      cx,
+      cy,
+      until: state.time + 0.42,
+      radius: R,
+      kind: "mega_ground",
     });
   }
 
@@ -1996,6 +2089,20 @@
     });
   }
 
+  function createStatueBuilding(side, x, y, state) {
+    state.buildings.push({
+      id: `b${++state.uid}`,
+      kind: "statue",
+      side,
+      x,
+      y,
+      hp: STATUE_HP,
+      maxHp: STATUE_HP,
+      radius: 18,
+      statueDeathBlasted: false,
+    });
+  }
+
   function createGarrisonTowerBuilding(side, x, y, state) {
     state.buildings.push({
       id: `b${++state.uid}`,
@@ -2365,6 +2472,17 @@
     return d;
   }
 
+  function evoCardEligible(cardId) {
+    return cardId === "bomber" || cardId === "chud" || cardId === "tung_tung_tung_sahur";
+  }
+
+  function cardEvoEnabledForSide(state, side, cardId) {
+    if (!state || !side || !evoCardEligible(cardId)) return false;
+    const evo = state.evoSlotBySide;
+    if (!evo) return false;
+    return evo[side] === cardId;
+  }
+
   function troopRageMultiplier(troop, now) {
     return troop.rageUntil != null && now < troop.rageUntil ? RAGE_MOVE_ATK_MUL : 1;
   }
@@ -2467,6 +2585,10 @@
         combatLocked: false,
       });
     } else if (type === "tung_tung_tung_sahur") {
+      const idx = state.tungCycleIdx[side];
+      const cycleReady = idx >= TUNG_EVO_REQUIRED_CYCLES;
+      const isEvo = cardEvoEnabledForSide(state, side, "tung_tung_tung_sahur") && cycleReady;
+      state.tungCycleIdx[side] = cycleReady ? 0 : idx + 1;
       state.troops.push({
         id: `u${++state.uid}`,
         side,
@@ -2491,6 +2613,9 @@
         faceY,
         stunUntil: 0,
         combatLocked: false,
+        tungEvo: isEvo,
+        tungMini: false,
+        tungMiniSpawned: false,
       });
     } else if (type === "heavenly_tung") {
       state.troops.push({
@@ -2659,7 +2784,10 @@
       const trainAlwaysEvo =
         state.matchMode === "training" && state.testing && state.testing.chudAlwaysEvo;
       const idx = state.chudCycleIdx[side];
-      const isEvo = trainAlwaysEvo ? true : idx % 2 === 1;
+      const cycleReady = idx % 2 === 1;
+      const isEvo = trainAlwaysEvo
+        ? true
+        : cardEvoEnabledForSide(state, side, "chud") && cycleReady;
       state.chudCycleIdx[side] = idx + 1;
       state.troops.push({
         id: `u${++state.uid}`,
@@ -3184,7 +3312,10 @@
       const trainAlwaysEvo =
         state.matchMode === "training" && state.testing && state.testing.bomberAlwaysEvo;
       const idx = state.bomberCycleIdx[side];
-      const isEvo = trainAlwaysEvo ? true : idx % 2 === 1;
+      const cycleReady = idx % 2 === 1;
+      const isEvo = trainAlwaysEvo
+        ? true
+        : cardEvoEnabledForSide(state, side, "bomber") && cycleReady;
       state.bomberCycleIdx[side] = idx + 1;
       state.troops.push({
         id: `u${++state.uid}`,
@@ -3645,8 +3776,10 @@
       runtimePlayerDeck && validateDeckForGame(runtimePlayerDeck)
         ? runtimePlayerDeck.slice()
         : DEFAULT_DECK_EIGHT.slice();
-    const pDeck = shuffleDeckFrom(normalizeDeckCardIds(pSrcRaw));
-    const eDeck = shuffleDeckFrom(DEFAULT_DECK_EIGHT);
+    const pSrc = normalizeDeckCardIds(pSrcRaw);
+    const eSrc = normalizeDeckCardIds(DEFAULT_DECK_EIGHT);
+    const pDeck = shuffleDeckFrom(pSrc);
+    const eDeck = shuffleDeckFrom(eSrc);
     return {
       towers,
       troops: [],
@@ -3666,6 +3799,8 @@
       selectedSlot: null,
       /** @type {{ cx: number; cy: number; until: number } | null} */
       arrowFx: null,
+      /** @type {{ cx: number; cy: number; until: number } | null} */
+      cloneFx: null,
       /** @type {{ cx: number; cy: number; until: number } | null} */
       fireballFx: null,
       /** Barrel landing puff (spawn only — no AoE damage). */
@@ -3709,10 +3844,14 @@
       remoteEmote: null,
       /** @type {"training" | "battle"} */
       matchMode: "training",
-      /** Per side: count of Bomber deploys — alternates normal / Evo Bomber. */
+      /** Legacy counters kept for compatibility/debug. */
       bomberCycleIdx: { player: 0, enemy: 0 },
-      /** Per side: count of Chud deploys — alternates normal / Evo Chud (pulse shockwave). */
+      /** Legacy counters kept for compatibility/debug. */
       chudCycleIdx: { player: 0, enemy: 0 },
+      /** Evo Tung requires 2 non-evo cycles before next evo proc. */
+      tungCycleIdx: { player: 0, enemy: 0 },
+      /** Evo slot card per side (deck slot #1 only). */
+      evoSlotBySide: { player: pSrc[0] || null, enemy: eSrc[0] || null },
       /** PvP: regulation ended (clock hit 0); tie → overtime, else winner set. */
       pvpRegulationResolved: false,
       /** PvP: sudden death after regulation tie; first princess tower ends the match. */
@@ -4950,6 +5089,18 @@
       cycleEnemyHand(state, slot);
       return;
     }
+    if (card === "clone") {
+      const px = clamp(120 + Math.random() * 560, 24, W - 24);
+      const py =
+        aiSide === "enemy"
+          ? clamp(RIVER_BOT + 40 + Math.random() * (H - RIVER_BOT - 80), 24, H - 24)
+          : clamp(40 + Math.random() * Math.max(24, RIVER_TOP - 80), 24, H - 24);
+      state.enemyElixir -= cost;
+      applyCloneSpell(px, py, state);
+      notifyLastPlayedCard(state, aiSide, "clone");
+      cycleEnemyHand(state, slot);
+      return;
+    }
     if (card === "fireball") {
       const px = clamp(120 + Math.random() * 560, 24, W - 24);
       const py =
@@ -5127,6 +5278,7 @@
   function isSpellCardId(card) {
     return (
       card === "arrows" ||
+      card === "clone" ||
       card === "fireball" ||
       card === "goblin_barrel" ||
       card === "rocket" ||
@@ -5264,10 +5416,12 @@
     if (card === "skarmy") return SKARMY_COST;
     if (card === "mega_army") return MEGA_ARMY_COST;
     if (card === "arrows") return ARROWS_COST;
+    if (card === "clone") return CLONE_COST;
     if (card === "fireball") return FIREBALL_COST;
     if (card === "goblin_barrel") return GOBLIN_BARREL_COST;
     if (card === "rocket") return ROCKET_COST;
     if (card === "goblin_hut") return GOBLIN_HUT_COST;
+    if (card === "statue") return STATUE_COST;
     if (card === "goblin_drill") return GOBLIN_DRILL_COST;
     if (card === "goblin_drill_army") return GOBLIN_DRILL_ARMY_COST;
     if (card === "build") return BUILD_SPELL_COST;
@@ -5351,10 +5505,12 @@
     if (cardId === "mega_army")
       return { name: "Mega Army", img: "assets/mega-army-card.svg", cost };
     if (cardId === "arrows") return { name: "Arrows", img: "assets/arrows-card.svg", cost };
+    if (cardId === "clone") return { name: "Clone", img: "assets/clone-card.svg", cost };
     if (cardId === "fireball") return { name: "Fireball", img: "assets/fireball-card.svg", cost };
     if (cardId === "goblin_barrel") return { name: "Goblin Barrel", img: "assets/goblin-barrel-card.svg", cost };
     if (cardId === "rocket") return { name: "Rocket", img: "assets/rocket-card.svg", cost };
     if (cardId === "goblin_hut") return { name: "Goblin Hut", img: "assets/goblin-hut-card.svg", cost };
+    if (cardId === "statue") return { name: "Statue", img: "assets/statue-card.svg", cost };
     if (cardId === "goblin_drill") return { name: "Goblin Drill", img: "assets/goblin-drill-card.svg", cost };
     if (cardId === "goblin_drill_army")
       return {
@@ -5420,11 +5576,15 @@
     bat_army: "Fifteen bats in the same spiral — flying swarm; ground melee can’t reach them.",
     mega_army: "Skeletons, shielded guards, and a witch — layered push with spawns.",
     arrows: "Spell — damage in a circle anywhere on arena; hurts troops, towers, and enemy buildings.",
+    clone:
+      "Spell — duplicates troops in radius (any side). Clones are cyan and always 1 HP; cannot clone clones.",
     fireball: "Spell — projectile from your king; big burst where it lands.",
     goblin_barrel: "Barrel flies like Fireball; spawns three melee goblins on landing (no spell damage).",
     rocket: "Spell — tight, very high blast; strong vs clumped troops and towers.",
     freeze: "Spell — lingering zone that damages once and locks enemies inside in stuns.",
     goblin_hut: "Building — drains over time while spearing enemies who step in its spawn ring.",
+    statue:
+      "Building — inert stone monument. On death it explodes (small fireball-like blast: 40% less damage).",
     cannon: "Timed cannon — shoots the nearest foe troop or building in range until it breaks.",
     garrison_tower: "Decay tower — one troop hides inside until the structure dies.",
     luxury_hotel: "Two-slot garrison building — hides two troops with special occupancy rules.",
@@ -5439,7 +5599,8 @@
     mega_knight: "Armored jumper — shadow leap onto clusters, ground splash on landing.",
     mega_knight_army: "Fifteen Mega Knights in the same spiral as Skarmy — pure jump chaos.",
     musketeer: "Long-range single-shot rifle — consistent DPS on one target at a time.",
-    tung_tung_tung_sahur: "Meme melee — absurd attack rate; explodes on death in a large ring.",
+    tung_tung_tung_sahur:
+      "Meme melee — absurd attack rate; explodes on death in a large ring. Evo (slot #1 + 2 cycles): on death, spawns 2 mini Tungs at each princess tower (all 50% stats).",
     heavenly_tung:
       "Super unit — charge, laser phase, then arena nuke; finale spawns 12 Tung Sahur, 3 Mega Goblin Army, and another Heavenly Tung.",
     bir_bir_patapins: "Four flying patapins — ghost/squad rules when they fall.",
@@ -5481,6 +5642,8 @@
       startDrillArmyDeployments(state, side, x, y);
     } else if (card === "goblin_hut") {
       createGoblinHutBuilding(side, x, y, state);
+    } else if (card === "statue") {
+      createStatueBuilding(side, x, y, state);
     } else if (card === "prince_tower") {
       createPrinceTowerBuilding(side, x, y, state);
     } else if (card === "cannon") {
@@ -5592,6 +5755,43 @@
       }
     }
     state.arrowFx = { cx, cy, until: state.time + 0.48 };
+  }
+
+  function applyCloneSpell(cx, cy, state) {
+    const R = CLONE_SPELL_RADIUS;
+    const clones = [];
+    for (const u of state.troops) {
+      if (u.hp <= 0) continue;
+      if (u.isClone) continue;
+      if (troopInsideGarrisonAlive(u, state)) continue;
+      if (dist(u.x, u.y, cx, cy) > R) continue;
+      clones.push(u);
+    }
+    if (!clones.length) {
+      state.cloneFx = { cx, cy, until: state.time + 0.42 };
+      return;
+    }
+    for (let i = 0; i < clones.length; i++) {
+      const src = clones[i];
+      const a = ((i + 1) / clones.length) * Math.PI * 2;
+      const ox = Math.cos(a) * 8;
+      const oy = Math.sin(a) * 8;
+      const clone = { ...src };
+      clone.id = `u${++state.uid}`;
+      clone.x = clamp(src.x + ox, 12, W - 12);
+      clone.y = clamp(src.y + oy, 12, H - 12);
+      clone.hp = 1;
+      clone.maxHp = 1;
+      clone.isClone = true;
+      clone.spawnTime = state.time;
+      clone.lastMeleeAt = -999;
+      clone.attackT = 0;
+      clone.shieldHp = 0;
+      clone.shieldMax = 0;
+      if (clone.type === "chud") clone.chudEvoPulseAcc = 0;
+      state.troops.push(clone);
+    }
+    state.cloneFx = { cx, cy, until: state.time + 0.42 };
   }
 
   function applyFireballStrike(cx, cy, attackerSide, state) {
@@ -5918,6 +6118,7 @@
   /** @param {"player"|"enemy"} side */
   function replayMirroredSpell(state, inner, cx, cy, side) {
     if (inner === "arrows") applyArrowsStrike(cx, cy, side, state);
+    else if (inner === "clone") applyCloneSpell(cx, cy, state);
     else if (inner === "fireball") applyFireballStrike(cx, cy, side, state);
     else if (inner === "goblin_barrel") applyGoblinBarrelStrike(cx, cy, side, state);
     else if (inner === "rocket") applyRocketStrike(cx, cy, side, state);
@@ -6217,10 +6418,12 @@
       card !== "bat_army" &&
       card !== "mega_army" &&
       card !== "arrows" &&
+      card !== "clone" &&
       card !== "fireball" &&
       card !== "goblin_barrel" &&
       card !== "rocket" &&
       card !== "goblin_hut" &&
+      card !== "statue" &&
       card !== "cannon" &&
       card !== "garrison_tower" &&
       card !== "luxury_hotel" &&
@@ -6259,6 +6462,14 @@
       state.enemyElixir = Math.max(0, state.enemyElixir - cost);
       applyArrowsStrike(cx, cy, "enemy", state);
       notifyLastPlayedCard(state, "enemy", "arrows");
+      return;
+    }
+    if (card === "clone") {
+      const cx = clamp(x, 16, W - 16);
+      const cy = clamp(yMir, 16, H - 16);
+      state.enemyElixir = Math.max(0, state.enemyElixir - cost);
+      applyCloneSpell(cx, cy, state);
+      notifyLastPlayedCard(state, "enemy", "clone");
       return;
     }
     if (card === "fireball") {
@@ -6544,6 +6755,20 @@
       return true;
     }
 
+    if (card === "clone") {
+      if (!spellInArena(px, py)) {
+        px = clamp(x, 16, W - 16);
+        py = clamp(y, 16, H - 16);
+      }
+      if (!inf) state.playerElixir -= cost;
+      applyCloneSpell(px, py, state);
+      notifyLastPlayedCard(state, hs, "clone");
+      cyclePlayerHand(state, slot);
+      state.selectedSlot = null;
+      pushBattleDeploy(card, px, py);
+      return true;
+    }
+
     if (card === "fireball") {
       if (!spellInArena(px, py)) {
         px = clamp(x, 16, W - 16);
@@ -6768,6 +6993,7 @@
     if (state.localEmote && state.time >= state.localEmote.until) state.localEmote = null;
     if (state.remoteEmote && state.time >= state.remoteEmote.until) state.remoteEmote = null;
     if (state.arrowFx && state.time >= state.arrowFx.until) state.arrowFx = null;
+    if (state.cloneFx && state.time >= state.cloneFx.until) state.cloneFx = null;
     if (state.fireballFx && state.time >= state.fireballFx.until) state.fireballFx = null;
     if (state.goblinBarrelFx && state.time >= state.goblinBarrelFx.until) state.goblinBarrelFx = null;
     if (state.rocketFx && state.time >= state.rocketFx.until) state.rocketFx = null;
@@ -7522,6 +7748,70 @@
       ctx.ellipse(-rw * 0.35, capY - rh * 0.15, rw * 0.2, rh * 0.12, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+    if (u.type === "chud" && u.chudEvo) {
+      // Evo Chud: blue pants accent on lower body.
+      const pantsTop = vis.s * 0.06;
+      const pantsH = vis.s * 0.44;
+      ctx.save();
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.fillStyle = "rgba(37, 99, 235, 0.5)";
+      ctx.fillRect(-vis.s * 0.42, pantsTop, vis.s * 0.84, pantsH);
+      ctx.strokeStyle = "rgba(147, 197, 253, 0.85)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-vis.s * 0.22, pantsTop + 2);
+      ctx.lineTo(-vis.s * 0.22, pantsTop + pantsH);
+      ctx.moveTo(vis.s * 0.22, pantsTop + 2);
+      ctx.lineTo(vis.s * 0.22, pantsTop + pantsH);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (u.type === "tung_tung_tung_sahur" && u.tungEvo) {
+      // Evo Tung: glowing red eyes.
+      const eyeY = -vis.s * 0.12;
+      const ex = vis.s * 0.13;
+      const er = Math.max(1.3, vis.s * 0.055);
+      ctx.save();
+      ctx.fillStyle = "rgba(239, 68, 68, 0.95)";
+      ctx.shadowColor = "rgba(239, 68, 68, 0.95)";
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(-ex, eyeY, er, 0, Math.PI * 2);
+      ctx.arc(ex, eyeY, er, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "rgba(254, 242, 242, 0.95)";
+      ctx.beginPath();
+      ctx.arc(-ex - er * 0.15, eyeY - er * 0.15, er * 0.33, 0, Math.PI * 2);
+      ctx.arc(ex - er * 0.15, eyeY - er * 0.15, er * 0.33, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    if (u.isClone) {
+      // Glassy cyan clone look inspired by vial-style art.
+      const shell = vis.s * 0.56;
+      ctx.save();
+      ctx.globalCompositeOperation = "source-atop";
+      const grad = ctx.createLinearGradient(0, -vis.s / 2, 0, vis.s / 2);
+      grad.addColorStop(0, "rgba(103, 232, 249, 0.56)");
+      grad.addColorStop(0.6, "rgba(34, 211, 238, 0.34)");
+      grad.addColorStop(1, "rgba(8, 145, 178, 0.42)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(-vis.s / 2 - 3, -vis.s / 2 - 3, vis.s + 6, vis.s + 6);
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = "rgba(224, 255, 255, 0.22)";
+      ctx.fillRect(-vis.s * 0.2, -vis.s * 0.35, vis.s * 0.12, vis.s * 0.65);
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = 0.42;
+      ctx.strokeStyle = "rgba(165, 243, 252, 0.9)";
+      ctx.lineWidth = 1.35;
+      ctx.beginPath();
+      ctx.ellipse(u.x, drawY - 2, shell, shell * 0.84, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     {
       const hs = state ? humanControlSide(state) : "player";
       const foeStunned =
@@ -7987,6 +8277,38 @@
     ctx.restore();
   }
 
+  function drawCloneSpellFx(ctx, state) {
+    const f = state.cloneFx;
+    if (!f || state.time > f.until) return;
+    const cx = f.cx;
+    const cy = f.cy;
+    const t = clamp((f.until - state.time) / 0.42, 0, 1);
+    const pulse = CLONE_SPELL_RADIUS * (0.52 + 0.48 * (1 - t));
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.45 * t;
+    ctx.strokeStyle = "#06b6d4";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([9, 6]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(165,243,252,0.85)";
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + state.time * 5;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * (pulse * 0.2), cy + Math.sin(a) * (pulse * 0.2));
+      ctx.lineTo(cx + Math.cos(a) * pulse, cy + Math.sin(a) * pulse);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(34,211,238,0.2)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulse * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawFireballSpellFx(ctx, state) {
     const f = state.fireballFx;
     if (!f || state.time > f.until) return;
@@ -8367,6 +8689,37 @@
   }
 
   function drawBuilding(ctx, b, state) {
+    if (b.kind === "statue") {
+      const w = 30;
+      const h = 36;
+      const px = b.x - w / 2;
+      const py = b.y - h / 2;
+      if (b.hp <= 0) ctx.globalAlpha = 0.28;
+      ctx.save();
+      ctx.fillStyle = "#334155";
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(b.x, py - 10);
+      ctx.lineTo(px + w + 2, py + 4);
+      ctx.lineTo(px - 2, py + 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillRect(px + 5, py + 4, w - 10, h - 4);
+      ctx.strokeRect(px + 5, py + 4, w - 10, h - 4);
+      ctx.fillStyle = "rgba(148,163,184,0.45)";
+      ctx.fillRect(px + 10, py + 10, 4, h - 14);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      const pct = Math.max(0, b.hp / b.maxHp);
+      const barY = b.side === "enemy" ? py + h + 6 : py - 12;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(px, barY, w, 5);
+      ctx.fillStyle = pct > 0.35 ? "#4ade80" : "#f87171";
+      ctx.fillRect(px, barY, w * pct, 5);
+      return;
+    }
     if (b.kind === "tombstone") {
       const w = 32;
       const h = 28;
@@ -8994,6 +9347,7 @@
     }
     drawGoblinDrillBurrowFx(ctx, state);
     drawArrowSpellFx(ctx, state);
+    drawCloneSpellFx(ctx, state);
     drawFireballSpellFx(ctx, state);
     drawGoblinBarrelLandFx(ctx, state);
     drawRocketSpellFx(ctx, state);
@@ -9055,6 +9409,7 @@
       `<strong>Deck</strong>: 8 <strong>unique</strong> cards — 4 in hand, 4 in queue (no duplicates in the rotation). ` +
       `<strong>Goblin Hut</strong> (${GOBLIN_HUT_COST}): HP decays over <strong>~${GOBLIN_HUT_LIFETIME_SEC}s</strong> like a timed building; dashed <strong>${HUT_TRIGGER_RADIUS}px</strong> ring; with a foe inside, one Spear Goblin every <strong>${HUT_SPAWN_INTERVAL}s</strong> (cap ${MAX_SPEAR_PER_HUT}). ` +
       `<strong>Cannon</strong> (${CANNON_COST}): <strong>${CANNON_HP}</strong> HP decays over <strong>${CANNON_LIFETIME_SEC}s</strong>; shoots ground troops/buildings in range (<strong>${CANNON_RANGE}px</strong>, <strong>${CANNON_SHOT_DMG}</strong> / <strong>${CANNON_FIRE_INTERVAL}s</strong>). ` +
+      `<strong>Statue</strong> (${STATUE_COST}): <strong>${STATUE_HP}</strong> HP inert building (no attacks). On death: blast in <strong>${Math.round(STATUE_DEATH_BLAST_RADIUS)}px</strong> for <strong>${Math.round(STATUE_DEATH_BLAST_DMG)}</strong> to troops/buildings and <strong>${Math.round(STATUE_DEATH_BLAST_TOWER_DMG)}</strong> to towers. ` +
       `<strong>Mega Goblin Army</strong> (${MEGA_GOBLIN_ARMY_COST}): <strong>Chud</strong> + hut head; dashed <strong>${HUT_TRIGGER_RADIUS}px</strong> ring follows him — with a foe inside, one Spear Goblin / <strong>${MEGA_GOBLIN_ARMY_SPEAR_INTERVAL}s</strong> (cap ${MAX_SPEAR_PER_HUT} live). On death, <strong>5</strong> melee goblins. ` +
       `<strong>Mega Army</strong> (${MEGA_ARMY_COST}): <strong>${MEGA_ARMY_GUARD_COUNT}</strong> shielded skeleton guards (${SKELETON_GUARD_SHIELD_HP} shield HP, overflow wasted), <strong>${MEGA_ARMY_SKELETON_COUNT}</strong> skeletons, <strong>1</strong> witch. ` +
       `<strong>Boberdino Crocodelo</strong> (${BOBERDINO_CROCODELO_COST}): <strong>${BOBERDINO_HP}</strong> HP air unit — only hunts <strong>enemy towers</strong> (no melee damage); bombs every <strong>${BOBERDINO_BOMB_INTERVAL_SEC}s</strong> (<strong>${Math.round(BOBERDINO_BOMB_RADIUS)}</strong> splash, ½× Fireball radius; troop dmg −50% vs spell). ` +
@@ -9064,6 +9419,7 @@
       `<strong>Bat Army</strong> (${BAT_ARMY_COST}): <strong>${SKARMY_SPAWN_COUNT}</strong> bats in the Skeleton Army layout (${BAT_HP} HP each, flying). ` +
       `<strong>Mega Knight Army</strong> (${MEGA_KNIGHT_ARMY_COST}): <strong>${SKARMY_SPAWN_COUNT}</strong> Mega Knights in the Skeleton Army layout. ` +
       `<strong>Arrows</strong> (${ARROWS_COST}) / <strong>Fireball</strong> (${FIREBALL_COST}) / <strong>Goblin Barrel</strong> (${GOBLIN_BARREL_COST}) / <strong>Rocket</strong> (${ROCKET_COST}) / <strong>Zap</strong> (${ZAP_COST}) / <strong>Freeze</strong> (${FREEZE_COST}): cast <strong>anywhere</strong>; Goblin Barrel = flies like Fireball, <strong>no</strong> spell damage, spawns <strong>3</strong> melee goblins on arrival; Freeze = <strong>${FREEZE_DURATION_SEC}s</strong> icy zone, <strong>${FREEZE_SPELL_DMG}</strong> damage once, stuns while inside. ` +
+      `<strong>Clone</strong> (${CLONE_COST}): duplicates troops in <strong>${Math.round(CLONE_SPELL_RADIUS)}px</strong>; clones are <strong>cyan</strong>, <strong>1 HP</strong>, and clones cannot be cloned. ` +
       `<strong>Shields</strong> (${SHIELDS_SPELL_COST}): allied troops and arena towers in <strong>${Math.round(SHIELDS_SPELL_RADIUS)}px</strong> (½ Arrows splash) gain <strong>${GENERIC_SHIELD_BUFF_HP}</strong> shield HP (breaking hit wastes extra damage). ` +
       `<strong>Rage</strong> (${RAGE_SPELL_COST}): Zap radius — allied troops <strong>+${Math.round((RAGE_MOVE_ATK_MUL - 1) * 100)}% move &amp; attack</strong> for <strong>${RAGE_BUFF_DURATION_SEC}s</strong>, <strong>${RAGE_SPELL_DMG}</strong> once to foes (troops/towers/buildings). ` +
       `<strong>Mirror</strong>: cost = <strong>your</strong> previous deploy on <em>your</em> grass + <strong>${MIRROR_EXTRA_ELIXIR}</strong> elixir — replays that card with shields (swarms: ~⅓ shielded).<br/>`;
@@ -9094,23 +9450,35 @@
   function nextDeployedBomberIsEvo(state, side) {
     if (!state || !state.bomberCycleIdx) return false;
     if (state.matchMode === "training" && state.testing && state.testing.bomberAlwaysEvo) return true;
+    if (!cardEvoEnabledForSide(state, side, "bomber")) return false;
     return state.bomberCycleIdx[side] % 2 === 1;
   }
 
   function nextDeployedChudIsEvo(state, side) {
     if (!state || !state.chudCycleIdx) return false;
     if (state.matchMode === "training" && state.testing && state.testing.chudAlwaysEvo) return true;
+    if (!cardEvoEnabledForSide(state, side, "chud")) return false;
     return state.chudCycleIdx[side] % 2 === 1;
   }
 
-  /** Hand / next preview: Evo Bomber (gem) — next bomber from this player is Evo. */
+  function nextDeployedTungIsEvo(state, side) {
+    if (!state || !state.tungCycleIdx) return false;
+    if (!cardEvoEnabledForSide(state, side, "tung_tung_tung_sahur")) return false;
+    return state.tungCycleIdx[side] >= TUNG_EVO_REQUIRED_CYCLES;
+  }
+
+  /** Hand / next preview: Evo Bomber gem when bomber owns evo slot. */
   function cardShowsBomberEvoGem(state, cardId) {
     return cardId === "bomber" && nextDeployedBomberIsEvo(state, humanControlSide(state));
   }
 
-  /** Hand / next preview: Evo Chud (gem) — next Chud from this player is Evo. */
+  /** Hand / next preview: Evo Chud gem when chud owns evo slot. */
   function cardShowsChudEvoGem(state, cardId) {
     return cardId === "chud" && nextDeployedChudIsEvo(state, humanControlSide(state));
+  }
+
+  function cardShowsTungEvoGem(state, cardId) {
+    return cardId === "tung_tung_tung_sahur" && nextDeployedTungIsEvo(state, humanControlSide(state));
   }
 
   function syncHandDom(state, els) {
@@ -9146,7 +9514,9 @@
       btn.classList.toggle("is-selected", state.selectedSlot === s);
       btn.classList.toggle(
         "card-has-evo",
-        cardShowsBomberEvoGem(state, cardId) || cardShowsChudEvoGem(state, cardId),
+        cardShowsBomberEvoGem(state, cardId) ||
+          cardShowsChudEvoGem(state, cardId) ||
+          cardShowsTungEvoGem(state, cardId),
       );
     }
 
@@ -9155,7 +9525,9 @@
       if (nextId)
         els.deckNextWrap.classList.toggle(
           "card-next-has-evo",
-          cardShowsBomberEvoGem(state, nextId) || cardShowsChudEvoGem(state, nextId),
+          cardShowsBomberEvoGem(state, nextId) ||
+            cardShowsChudEvoGem(state, nextId) ||
+            cardShowsTungEvoGem(state, nextId),
         );
       else els.deckNextWrap.classList.remove("card-next-has-evo");
     }
@@ -9188,6 +9560,10 @@
         hintEl.textContent = "Tap anywhere on the arena to cast Zap (small area damage).";
       } else if (selCard === "freeze") {
         hintEl.textContent = `Freeze (${FREEZE_COST} elixir): tap anywhere — ${FREEZE_DURATION_SEC}s zone, ${FREEZE_SPELL_DMG} damage once, enemies inside are stunned for the full duration.`;
+      } else if (selCard === "clone") {
+        hintEl.textContent = `Clone (${CLONE_COST} elixir): duplicates any troops in ${Math.round(
+          CLONE_SPELL_RADIUS,
+        )}px. Clones are cyan, always 1 HP, and cannot be cloned again. Tap anywhere.`;
       } else if (selCard === "shields") {
         hintEl.textContent = `Shields (${SHIELDS_SPELL_COST} elixir): buff allied troops and arena towers in ${Math.round(
           SHIELDS_SPELL_RADIUS,
@@ -9211,6 +9587,10 @@
       } else if (selCard === "goblin_hut") {
         hintEl.textContent =
           `Place on your grass. HP slowly drains (~${GOBLIN_HUT_LIFETIME_SEC}s lifetime). Ring = spawn range: one Spear Goblin / 2s while an enemy is inside.`;
+      } else if (selCard === "statue") {
+        hintEl.textContent = `Statue (${STATUE_COST}): ${STATUE_HP} HP building — does not attack. On death it explodes in ${Math.round(
+          STATUE_DEATH_BLAST_RADIUS,
+        )}px (small fireball-like blast): ${Math.round(STATUE_DEATH_BLAST_DMG)} damage to troops/buildings, ${Math.round(STATUE_DEATH_BLAST_TOWER_DMG)} to towers.`;
       } else if (selCard === "goblin_drill") {
         hintEl.textContent = `Goblin Drill (${GOBLIN_DRILL_COST} elixir): tap on opponent grass — tunnels ~${GOBLIN_DRILL_TRAVEL_SEC}s from your king (path shown); drill loses HP twice as fast as a hut baseline; when destroyed, spills 2 melee Goblins. Active drill spawns a Goblin every ${GOBLIN_DRILL_SPAWN_INTERVAL}s (max ${MAX_DRILL_GOBLINS} alive).`;
       } else if (selCard === "goblin_drill_army") {
@@ -9252,17 +9632,24 @@
         hintEl.textContent = `Nothing Army (0 elixir): ${NOTHING_ARMY_COUNT} nothings — still nothing on the arena. Tap anywhere.`;
       } else if (selCard === "bats") {
         hintEl.textContent = `Bats (${BATS_COST}): ${BAT_COUNT}× flying swarm — ${BAT_HP} HP, ${BAT_DMG} dmg (¾ skeleton); ground melee can’t hit them.`;
+      } else if (selCard === "tung_tung_tung_sahur") {
+        const evoHint = nextDeployedTungIsEvo(state, humanControlSide(state))
+          ? ` Evo slot active + cycles ready: on death spawns 2 mini Tungs at each princess tower (mini = 50% HP/damage/death splash/death explosion damage).`
+          : ` Put him in deck slot #1 (evo slot) and cycle ${TUNG_EVO_REQUIRED_CYCLES} times to arm evo.`;
+        hintEl.textContent = `Tung Tung Tung Sahur (${TUNG_SAHUR_COST} elixir): ${TUNG_SAHUR_HP} HP, ultra-fast hits (${ATTACK_INTERVAL_TUNG_SAHUR}s), death blast ${Math.round(
+          TUNG_SAHUR_DEATH_BLAST_RADIUS,
+        )}px for ${Math.round(TUNG_SAHUR_DEATH_BLAST_DMG)}.${evoHint}`;
       } else if (selCard === "assassin") {
         hintEl.textContent = `Assassin (${ASSASSIN_COST} elixir): ${KNIGHT_HP} HP + ${GENERIC_SHIELD_BUFF_HP} spawn shield, ${MINI_DMG} dmg / ${ATTACK_INTERVAL_MINI_PEKKA}s — ground troops only; melee splashes ~${Math.round(ASSASSIN_SPLASH_FRACTION * 100)}% damage in ${ASSASSIN_SPLASH_RADIUS}px. After ${ASSASSIN_CHARGE_PREP_SEC}s moving toward a foe: purple aura, ${ASSASSIN_CHARGE_SPEED_MUL}× speed & faster stride, next melee hits for double damage. Towers ignore him; Goblin Hut ring ignores him.`;
       } else if (selCard === "chud") {
         const evoHint = nextDeployedChudIsEvo(state, humanControlSide(state))
-          ? ` Evo: purple shockwave every ${CHUD_EVO_PULSE_SEC}s (${CHUD_EVO_PULSE_DMG} dmg + knockback in ${CHUD_EVO_PULSE_RADIUS}px).`
-          : ` Evo every other Chud — gem when Evo is queued.`;
+          ? ` Evo slot active: purple shockwave every ${CHUD_EVO_PULSE_SEC}s (${CHUD_EVO_PULSE_DMG} dmg + knockback in ${CHUD_EVO_PULSE_RADIUS}px).`
+          : ` Put Chud in deck slot #1 (purple evo slot) to enable evo.`;
         hintEl.textContent = `Chud (${CHUD_COST} elixir): ${CHUD_HP} HP tower hunter — ${CHUD_DMG} dmg / ${ATTACK_INTERVAL_CHUD}s; shoves smaller foes aside.${evoHint}`;
       } else if (selCard === "bomber") {
         const evoHint = nextDeployedBomberIsEvo(state, humanControlSide(state))
-          ? ` Evo: purple bomb & splashes, ${ATTACK_INTERVAL_BOMBER_EVO.toFixed(2)}s throws; bomb travels 30% slower with ${BOMBER_CHAIN_FOLLOW_UP_COUNT + 1} splashes (${BOMBER_CHAIN_STEP_SEC}s apart).`
-          : ` Evo every other Bomber — gem when Evo is queued.`;
+          ? ` Evo slot active: purple bomb & splashes, ${ATTACK_INTERVAL_BOMBER_EVO.toFixed(2)}s throws; bomb travels 30% slower with ${BOMBER_CHAIN_FOLLOW_UP_COUNT + 1} splashes (${BOMBER_CHAIN_STEP_SEC}s apart).`
+          : ` Put Bomber in deck slot #1 (purple evo slot) to enable evo.`;
         hintEl.textContent = `Bomber (${BOMBER_COST} elixir): explosions land slightly past enemies for fuller splashes.${evoHint}`;
       } else if (selCard) {
         hintEl.textContent =
@@ -9452,6 +9839,7 @@
         st.projectiles.length = 0;
         st.pendingDeploys.length = 0;
         st.arrowFx = null;
+        st.cloneFx = null;
         st.fireballFx = null;
         st.goblinBarrelFx = null;
         st.rocketFx = null;
@@ -9559,6 +9947,7 @@
     st.testing.combatDebug = false;
     st.testing.invincibleTroops = false;
     st.testing.bomberAlwaysEvo = false;
+    st.testing.chudAlwaysEvo = false;
     stateRef.current = st;
     gameRunning = true;
     lastFrameT = performance.now();
@@ -9609,7 +9998,7 @@
     getCardCostNumber: (cardId) => getCardCostNumber(String(cardId)),
   };
 
-  const NIGHT_ARENA_VERSION = 174;
+  const NIGHT_ARENA_VERSION = 180;
   window.NIGHT_ARENA_VERSION = NIGHT_ARENA_VERSION;
   function paintVersionBadge() {
     document.querySelectorAll("[data-na-version]").forEach((el) => {

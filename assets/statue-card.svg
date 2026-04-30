@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="8" fill="url(#bg)"/>
+  <rect x="5" y="5" width="54" height="54" rx="7" fill="none" stroke="#cbd5e1" stroke-opacity=".25"/>
+
+  <ellipse cx="32" cy="53" rx="18" ry="5" fill="rgba(0,0,0,0.35)"/>
+  <rect x="17" y="42" width="30" height="10" rx="2" fill="url(#base)" stroke="#1e293b" stroke-width="1"/>
+  <path d="M32 12 L48 22 L16 22 Z" fill="url(#stone)" stroke="#1e293b" stroke-width="1.2"/>
+  <rect x="22" y="22" width="20" height="21" rx="2" fill="url(#stone)" stroke="#1e293b" stroke-width="1.2"/>
+
+  <rect x="28" y="26" width="3.5" height="12" rx="1.7" fill="#e2e8f0" fill-opacity=".35"/>
+  <rect x="33" y="24" width="5" height="3" rx="1.5" fill="#f1f5f9" fill-opacity=".45"/>
+</svg>

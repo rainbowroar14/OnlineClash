@@ -47,11 +47,18 @@
             <h2>Your deck (8 cards)</h2>
             <p class="deck-builder-hint">
               Tap cards below to fill slots left to right. Tap a filled slot to remove. Needs all 8 filled — saved in your
-              browser for Training &amp; Battle. Use <strong>One card per row + description</strong> to scan the collection with blurbs; uncheck for the compact grid.
+              browser for Training &amp; Battle. Slot <strong>#1</strong> is the <strong>purple Evo slot</strong> — only that card’s evo can activate. Use <strong>One card per row + description</strong> to scan the collection with blurbs; uncheck for the compact grid.
             </p>
             <div class="deck-slots-row" id="deck-slots-row" aria-label="Deck slots"></div>
             <div class="deck-pool-toolbar">
               <span class="deck-pool-label">Collection</span>
+              <label class="deck-filter-setting">
+                <span>Filter</span>
+                <select id="deck-filter">
+                  <option value="all">All cards</option>
+                  <option value="evos">Evos only</option>
+                </select>
+              </label>
               <label class="deck-collection-setting">
                 <input type="checkbox" id="deck-collection-rows" checked />
                 <span>One card per row + description</span>
@@ -192,8 +199,8 @@
     </div>
 
     <!-- ?v= bumps cache after deploy; open /js/menu.js in browser and search FIREBASE_WEB_CONFIG to verify live file -->
-    <script src="js/game.js?v=174" defer></script>
+    <script src="js/game.js?v=180" defer></script>
     <script src="js/matchmaking.js?v=56" defer></script>
-    <script src="js/menu.js?v=63" defer></script>
+    <script src="js/menu.js?v=64" defer></script>
   </body>
 </html>

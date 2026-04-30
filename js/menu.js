@@ -76,6 +76,8 @@
 
   const DECK_STORAGE_KEY = "na_deck_v1";
   const COLLECTION_ROWS_KEY = "na_collection_rows_v1";
+  const DECK_FILTER_KEY = "na_deck_filter_v1";
+  const EVO_CARD_IDS = new Set(["bomber", "chud", "tung_tung_tung_sahur"]);
 
   function readCollectionRowsSetting() {
     try {
@@ -117,6 +119,7 @@
     const pool = document.getElementById("deck-pool-grid");
     const btnDef = document.getElementById("btn-deck-default");
     const chkRows = document.getElementById("deck-collection-rows");
+    const deckFilter = document.getElementById("deck-filter");
     if (!row || !pool || !btnDef) return;
 
     if (chkRows) {
@@ -124,6 +127,18 @@
       chkRows.addEventListener("change", () => {
         try {
           localStorage.setItem(COLLECTION_ROWS_KEY, chkRows.checked ? "1" : "0");
+        } catch {
+          /* ignore */
+        }
+        renderDeckUi();
+      });
+    }
+    if (deckFilter instanceof HTMLSelectElement) {
+      const saved = localStorage.getItem(DECK_FILTER_KEY);
+      deckFilter.value = saved === "evos" ? "evos" : "all";
+      deckFilter.addEventListener("change", () => {
+        try {
+          localStorage.setItem(DECK_FILTER_KEY, deckFilter.value === "evos" ? "evos" : "all");
         } catch {
           /* ignore */
         }
@@ -149,6 +164,7 @@
         const b = document.createElement("button");
         b.type = "button";
         b.className = "deck-slot-btn" + (id ? " is-filled" : "");
+        if (i === 0) b.classList.add("is-evo-slot");
         if (id) {
           const ui = na.getCardPreview(id);
           b.innerHTML = `<img src="${ui.img}" alt="" width="40" height="40" /><span class="deck-slot-cost">${ui.cost}</span>`;
@@ -169,9 +185,12 @@
       pool.innerHTML = "";
       const allFull = deckSlots.every((x) => x);
       const useRows = !chkRows || chkRows.checked;
+      const evoOnly =
+        deckFilter instanceof HTMLSelectElement ? deckFilter.value === "evos" : false;
       pool.classList.toggle("deck-pool-rows", useRows);
 
       for (const id of na.CARD_POOL) {
+        if (evoOnly && !EVO_CARD_IDS.has(id)) continue;
         const used = deckSlots.includes(id);
         const ui = na.getCardPreview(id);
         const desc = ui.description != null ? String(ui.description) : "";
